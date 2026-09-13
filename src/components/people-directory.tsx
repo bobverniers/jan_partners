@@ -10,7 +10,6 @@ import {
 } from "@/lib/people";
 import {
   EMPTY_FILTERS,
-  KEY_RANGES,
   NOTICE_OPTIONS,
   YEAR_OPTIONS,
   activeFilterCount,
@@ -23,7 +22,6 @@ import {
   type PeopleFilters,
 } from "@/lib/people-filters";
 import { PeopleProfileDrawer } from "@/components/people-profile-drawer";
-import { SignOutButton } from "@/components/sign-out-button";
 import { signedCvUrl } from "@/lib/cv-storage";
 
 type SortKey =
@@ -62,7 +60,10 @@ type SortKey =
   | "consultancy"
   | "comments";
 
-const TEXT_COL = "w-[52ch] max-w-[52ch]";
+const TEXT_COL = "w-[32ch] max-w-[32ch]";
+const NOTES_COL = "w-[52ch] max-w-[52ch]";
+const DEFAULT_WORD_LIMIT = 5;
+const NOTES_WORD_LIMIT = 10;
 
 function empty(value: string | null | undefined): string {
   const trimmed = value?.trim();
@@ -73,25 +74,39 @@ function joined(values: string[] | null | undefined): string {
   return values && values.length > 0 ? values.join(", ") : "—";
 }
 
-function isLongCell(text: string): boolean {
-  if (!text || text === "—") return false;
+function clipWords(text: string, limit: number): { preview: string; clipped: boolean } {
+  if (!text || text === "—") {
+    return { preview: text, clipped: false };
+  }
+
   const words = text.trim().split(/\s+/);
-  return words.length > 10 || text.length > 60;
+  if (words.length <= limit) {
+    return { preview: text, clipped: false };
+  }
+
+  return {
+    preview: `${words.slice(0, limit).join(" ")}…`,
+    clipped: true,
+  };
 }
 
-function ExpandableText({ text }: { text: string }) {
+function ExpandableText({
+  text,
+  wordLimit = DEFAULT_WORD_LIMIT,
+}: {
+  text: string;
+  wordLimit?: number;
+}) {
   const [expanded, setExpanded] = useState(false);
   const display = empty(text);
-  const long = isLongCell(display);
+  const { preview, clipped } = clipWords(display, wordLimit);
 
   return (
     <div>
-      <p
-        className={`break-words ${expanded || !long ? "" : "line-clamp-1"}`}
-      >
-        {display}
+      <p className="break-words">
+        {expanded || !clipped ? display : preview}
       </p>
-      {long ? (
+      {clipped ? (
         <button
           type="button"
           onClick={(event) => {
@@ -181,7 +196,7 @@ function FilterChip({
       onClick={onClick}
       className={`rounded-full px-3 py-1 text-sm ring-1 ring-inset ${
         selected
-          ? "bg-zinc-900 text-white ring-zinc-900"
+          ? "bg-bhp-navy text-white ring-bhp-navy"
           : "bg-white text-zinc-700 ring-zinc-200 hover:bg-zinc-50"
       }`}
     >
@@ -424,9 +439,14 @@ const COLUMNS: {
   {
     key: "notes",
     label: "Notes",
-    className: TEXT_COL,
+    className: NOTES_COL,
     sortValue: (person) => person.notes ?? "",
-    render: (person) => <ExpandableText text={empty(person.notes)} />,
+    render: (person) => (
+      <ExpandableText
+        text={empty(person.notes)}
+        wordLimit={NOTES_WORD_LIMIT}
+      />
+    ),
   },
   {
     key: "hasCv",
@@ -489,11 +509,9 @@ const COLUMNS: {
 export function PeopleDirectory({
   people,
   loadError,
-  userEmail,
 }: {
   people: Person[];
   loadError?: string | null;
-  userEmail?: string | null;
 }) {
   const [query, setQuery] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -558,7 +576,7 @@ export function PeopleDirectory({
       <div className="mx-auto flex w-full flex-col gap-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+            <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-bhp-navy">
               Hotel Managers
             </h1>
             <p className="mt-1 text-sm text-zinc-500">
@@ -592,16 +610,10 @@ export function PeopleDirectory({
                 setSelectedId(null);
                 setAdding(true);
               }}
-              className="h-10 rounded-lg bg-zinc-900 px-3 text-sm font-medium text-white hover:bg-zinc-800"
+              className="h-10 rounded-lg bg-bhp-navy px-3 text-sm font-medium text-white hover:bg-bhp-navy-deep"
             >
               + Add person
             </button>
-            {userEmail ? (
-              <span className="hidden text-xs text-zinc-500 sm:inline">
-                {userEmail}
-              </span>
-            ) : null}
-            <SignOutButton />
           </div>
         </div>
 
@@ -613,39 +625,6 @@ export function PeopleDirectory({
 
         {filtersOpen ? (
           <div className="grid gap-5 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-3">
-            <FilterGroup title="Status">
-              {PERSON_STATUSES.map((status) => (
-                <FilterChip
-                  key={status}
-                  selected={filters.statuses.includes(status)}
-                  onClick={() => updateFilters("statuses", status)}
-                >
-                  {PERSON_STATUS_LABELS[status]}
-                </FilterChip>
-              ))}
-            </FilterGroup>
-            <FilterGroup title="A/B">
-              {(["A", "B"] as const).map((tier) => (
-                <FilterChip
-                  key={tier}
-                  selected={filters.tiers.includes(tier)}
-                  onClick={() => updateFilters("tiers", tier)}
-                >
-                  {tier}
-                </FilterChip>
-              ))}
-            </FilterGroup>
-            <FilterGroup title="Residence">
-              {residences.map((residence) => (
-                <FilterChip
-                  key={residence}
-                  selected={filters.residences.includes(residence)}
-                  onClick={() => updateFilters("residences", residence)}
-                >
-                  {residence}
-                </FilterChip>
-              ))}
-            </FilterGroup>
             <FilterGroup title="Specialty">
               {specialties.map((option) => (
                 <FilterChip
@@ -668,56 +647,6 @@ export function PeopleDirectory({
                 </FilterChip>
               ))}
             </FilterGroup>
-            <FilterGroup title="Years as GM">
-              {YEAR_OPTIONS.map((years) => (
-                <FilterChip
-                  key={years}
-                  selected={filters.minYears.includes(years)}
-                  onClick={() => updateFilters("minYears", years)}
-                >
-                  {years}+
-                </FilterChip>
-              ))}
-            </FilterGroup>
-            <FilterGroup title="Keys">
-              {KEY_RANGES.map((range) => (
-                <FilterChip
-                  key={range.id}
-                  selected={filters.keyRanges.includes(range.id)}
-                  onClick={() => updateFilters("keyRanges", range.id)}
-                >
-                  {range.label}
-                </FilterChip>
-              ))}
-            </FilterGroup>
-            <FilterGroup title="Opening experience">
-              <FilterChip
-                selected={filters.opening.includes("yes")}
-                onClick={() => updateFilters("opening", "yes")}
-              >
-                Yes
-              </FilterChip>
-              <FilterChip
-                selected={filters.opening.includes("no")}
-                onClick={() => updateFilters("opening", "no")}
-              >
-                No
-              </FilterChip>
-            </FilterGroup>
-            <FilterGroup title="Capex / refurb">
-              <FilterChip
-                selected={filters.capex.includes("yes")}
-                onClick={() => updateFilters("capex", "yes")}
-              >
-                Yes
-              </FilterChip>
-              <FilterChip
-                selected={filters.capex.includes("no")}
-                onClick={() => updateFilters("capex", "no")}
-              >
-                No
-              </FilterChip>
-            </FilterGroup>
             <FilterGroup title="Notice">
               {NOTICE_OPTIONS.map((option) => (
                 <FilterChip
@@ -729,19 +658,27 @@ export function PeopleDirectory({
                 </FilterChip>
               ))}
             </FilterGroup>
-            <FilterGroup title="Availability">
-              <FilterChip
-                selected={filters.blackout.includes("none")}
-                onClick={() => updateFilters("blackout", "none")}
-              >
-                No blackouts
-              </FilterChip>
-              <FilterChip
-                selected={filters.blackout.includes("has")}
-                onClick={() => updateFilters("blackout", "has")}
-              >
-                Has blackouts
-              </FilterChip>
+            <FilterGroup title="Residence">
+              {residences.map((residence) => (
+                <FilterChip
+                  key={residence}
+                  selected={filters.residences.includes(residence)}
+                  onClick={() => updateFilters("residences", residence)}
+                >
+                  {residence}
+                </FilterChip>
+              ))}
+            </FilterGroup>
+            <FilterGroup title="Years as GM">
+              {YEAR_OPTIONS.map((years) => (
+                <FilterChip
+                  key={years}
+                  selected={filters.minYears.includes(years)}
+                  onClick={() => updateFilters("minYears", years)}
+                >
+                  {years}+
+                </FilterChip>
+              ))}
             </FilterGroup>
           </div>
         ) : null}

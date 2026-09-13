@@ -1,17 +1,6 @@
-import {
-  PERSON_STATUS_LABELS,
-  type Person,
-  type PersonStatus,
-} from "@/lib/people";
+import { type Person } from "@/lib/people";
 
 export const YEAR_OPTIONS = [5, 10, 15, 20] as const;
-
-export const KEY_RANGES = [
-  { id: "0-100", label: "0–100", min: 0, max: 100 },
-  { id: "100-250", label: "100–250", min: 100, max: 250 },
-  { id: "250-500", label: "250–500", min: 250, max: 500 },
-  { id: "500+", label: "500+", min: 500, max: Number.POSITIVE_INFINITY },
-] as const;
 
 export const NOTICE_OPTIONS = [
   { id: "immediate", label: "Immediate" },
@@ -52,36 +41,21 @@ export const LANGUAGE_OPTIONS = [
 ] as const;
 
 export type NoticeId = (typeof NOTICE_OPTIONS)[number]["id"];
-export type KeyRangeId = (typeof KEY_RANGES)[number]["id"];
-export type YesNo = "yes" | "no";
-export type BlackoutId = "none" | "has";
 
 export type PeopleFilters = {
-  statuses: PersonStatus[];
-  tiers: Array<"A" | "B">;
   residences: string[];
   specialties: string[];
   languages: string[];
   minYears: number[];
-  keyRanges: KeyRangeId[];
-  opening: YesNo[];
-  capex: YesNo[];
   notice: NoticeId[];
-  blackout: BlackoutId[];
 };
 
 export const EMPTY_FILTERS: PeopleFilters = {
-  statuses: [],
-  tiers: [],
   residences: [],
   specialties: [],
   languages: [],
   minYears: [],
-  keyRanges: [],
-  opening: [],
-  capex: [],
   notice: [],
-  blackout: [],
 };
 
 const RESIDENCE_ALIASES: Record<string, string> = {
@@ -125,24 +99,12 @@ export function toggleValue<T>(current: T[], value: T): T[] {
 
 export function activeFilterCount(filters: PeopleFilters): number {
   return (
-    filters.statuses.length +
-    filters.tiers.length +
     filters.residences.length +
     filters.specialties.length +
     filters.languages.length +
     filters.minYears.length +
-    filters.keyRanges.length +
-    filters.opening.length +
-    filters.capex.length +
-    filters.notice.length +
-    filters.blackout.length
+    filters.notice.length
   );
-}
-
-export function normalizeTier(tier: string | null): "A" | "B" | null {
-  const letter = tier?.trim().charAt(0).toUpperCase();
-  if (letter === "A" || letter === "B") return letter;
-  return null;
 }
 
 export function parseYearsAsGm(value: string | null): number | null {
@@ -157,56 +119,6 @@ export function parseYearsAsGm(value: string | null): number | null {
     .filter((number) => number >= 1 && number <= 55);
   const years = [...fromDates, ...fromCounts];
   return years.length > 0 ? Math.max(...years) : null;
-}
-
-export function parseKeyRange(
-  value: string | null,
-): { min: number; max: number } | null {
-  if (!value) return null;
-  const trimmed = value.trim();
-  if (/^(any|n\/a|na|projects|big box)$/i.test(trimmed)) return null;
-
-  const numbers = [...value.matchAll(/\d+(?:\.\d+)?/g)]
-    .map((match) => Number(match[0]))
-    .filter((number) => number >= 1 && number <= 20000);
-  if (numbers.length === 0) return null;
-
-  const min = Math.min(...numbers);
-  const max = Math.max(...numbers);
-  const hasPlus = /\d[\d\s]*\+|\+\+|plus/i.test(value);
-  const hasUpTo = /up to|max(?:imum)?/i.test(value);
-
-  if (hasPlus && !/[–\-to]/i.test(value)) {
-    return { min: max, max: Number.POSITIVE_INFINITY };
-  }
-  if (hasUpTo && numbers.length === 1) {
-    return { min: 0, max };
-  }
-  return { min, max };
-}
-
-function rangesOverlap(
-  left: { min: number; max: number },
-  right: { min: number; max: number },
-): boolean {
-  return left.max >= right.min && left.min <= right.max;
-}
-
-export function experienceFlag(value: string | null): boolean | null {
-  if (!value || !value.trim()) return null;
-  const text = value.trim().toLowerCase();
-  if (
-    /no opening/.test(text) ||
-    /^(0|no|n|none|n\/a|na)$/.test(text)
-  ) {
-    return false;
-  }
-  if (/^(y|yes)\b/.test(text) || /\byes\b/.test(text)) return true;
-  const numbers = [...text.matchAll(/\d+/g)].map((match) => Number(match[0]));
-  if (numbers.length > 0) {
-    return numbers.some((number) => number > 0 && number < 1900);
-  }
-  return true;
 }
 
 export function parseNoticeDays(value: string | null): number | null {
@@ -255,19 +167,6 @@ export function parseNoticeDays(value: string | null): number | null {
     return null;
   }
   return Math.max(...amounts);
-}
-
-export function hasBlackoutDates(value: string | null): boolean | null {
-  if (!value || !value.trim()) return null;
-  const text = value.trim().toLowerCase();
-  if (/^(tba|tbc|can be discussed)$/.test(text)) return null;
-  if (
-    /^(none|n\/a|na|no|no blackout dates)$/.test(text) ||
-    /^none\b/.test(text)
-  ) {
-    return false;
-  }
-  return true;
 }
 
 export function residencesOf(person: Person): string[] {
@@ -341,18 +240,6 @@ export function personMatchesFilters(
   person: Person,
   filters: PeopleFilters,
 ): boolean {
-  if (
-    filters.statuses.length > 0 &&
-    !filters.statuses.includes(person.status)
-  ) {
-    return false;
-  }
-
-  if (filters.tiers.length > 0) {
-    const tier = normalizeTier(person.tier);
-    if (!tier || !filters.tiers.includes(tier)) return false;
-  }
-
   if (filters.residences.length > 0) {
     const residences = residencesOf(person);
     if (!filters.residences.some((value) => residences.includes(value))) {
@@ -381,30 +268,6 @@ export function personMatchesFilters(
     }
   }
 
-  if (filters.keyRanges.length > 0) {
-    const keys = parseKeyRange(person.numberOfKeys);
-    if (!keys) return false;
-    const matches = filters.keyRanges.some((id) => {
-      const range = KEY_RANGES.find((item) => item.id === id);
-      return range ? rangesOverlap(keys, range) : false;
-    });
-    if (!matches) return false;
-  }
-
-  if (filters.opening.length > 0) {
-    const flag = experienceFlag(person.openingExperience);
-    if (flag == null) return false;
-    const wanted = filters.opening.map((value) => value === "yes");
-    if (!wanted.includes(flag)) return false;
-  }
-
-  if (filters.capex.length > 0) {
-    const flag = experienceFlag(person.capexRefurbExperience);
-    if (flag == null) return false;
-    const wanted = filters.capex.map((value) => value === "yes");
-    if (!wanted.includes(flag)) return false;
-  }
-
   if (filters.notice.length > 0) {
     const days = parseNoticeDays(person.noticePeriod);
     if (days == null) return false;
@@ -415,13 +278,6 @@ export function personMatchesFilters(
       return days > 31;
     });
     if (!matches) return false;
-  }
-
-  if (filters.blackout.length > 0) {
-    const has = hasBlackoutDates(person.blackoutDates);
-    if (has == null) return false;
-    const wanted = filters.blackout.map((value) => value === "has");
-    if (!wanted.includes(has)) return false;
   }
 
   return true;
@@ -438,26 +294,6 @@ export function filterChips(filters: PeopleFilters): {
     clear: (current: PeopleFilters) => PeopleFilters;
   }[] = [];
 
-  for (const status of filters.statuses) {
-    chips.push({
-      key: `status:${status}`,
-      label: `Status: ${PERSON_STATUS_LABELS[status]}`,
-      clear: (current) => ({
-        ...current,
-        statuses: current.statuses.filter((value) => value !== status),
-      }),
-    });
-  }
-  for (const tier of filters.tiers) {
-    chips.push({
-      key: `tier:${tier}`,
-      label: `A/B: ${tier}`,
-      clear: (current) => ({
-        ...current,
-        tiers: current.tiers.filter((value) => value !== tier),
-      }),
-    });
-  }
   for (const residence of filters.residences) {
     chips.push({
       key: `residence:${residence}`,
@@ -500,37 +336,6 @@ export function filterChips(filters: PeopleFilters): {
       }),
     });
   }
-  for (const range of filters.keyRanges) {
-    const option = KEY_RANGES.find((item) => item.id === range);
-    chips.push({
-      key: `keys:${range}`,
-      label: `Keys: ${option?.label ?? range}`,
-      clear: (current) => ({
-        ...current,
-        keyRanges: current.keyRanges.filter((value) => value !== range),
-      }),
-    });
-  }
-  for (const value of filters.opening) {
-    chips.push({
-      key: `opening:${value}`,
-      label: `Opening: ${value === "yes" ? "Yes" : "No"}`,
-      clear: (current) => ({
-        ...current,
-        opening: current.opening.filter((item) => item !== value),
-      }),
-    });
-  }
-  for (const value of filters.capex) {
-    chips.push({
-      key: `capex:${value}`,
-      label: `Capex: ${value === "yes" ? "Yes" : "No"}`,
-      clear: (current) => ({
-        ...current,
-        capex: current.capex.filter((item) => item !== value),
-      }),
-    });
-  }
   for (const value of filters.notice) {
     const option = NOTICE_OPTIONS.find((item) => item.id === value);
     chips.push({
@@ -539,17 +344,6 @@ export function filterChips(filters: PeopleFilters): {
       clear: (current) => ({
         ...current,
         notice: current.notice.filter((item) => item !== value),
-      }),
-    });
-  }
-  for (const value of filters.blackout) {
-    chips.push({
-      key: `blackout:${value}`,
-      label:
-        value === "none" ? "Availability: No blackouts" : "Availability: Has blackouts",
-      clear: (current) => ({
-        ...current,
-        blackout: current.blackout.filter((item) => item !== value),
       }),
     });
   }

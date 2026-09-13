@@ -1,15 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fafafa;
-  --foreground: #18181b;
+  --background: #f6f4ef;
+  --foreground: #33373d;
+  --bhp-navy: #000080;
+  --bhp-navy-deep: #000066;
+  --bhp-gold: #c4a35a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-bhp-navy: var(--bhp-navy);
+  --color-bhp-navy-deep: var(--bhp-navy-deep);
+  --color-bhp-gold: var(--bhp-gold);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-raleway);
 }
 
 html {

@@ -61,7 +61,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="h-11 w-full rounded-lg bg-zinc-900 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+        className="h-11 w-full rounded-lg bg-bhp-navy text-sm font-medium text-white hover:bg-bhp-navy-deep disabled:opacity-50"
       >
         {submitting ? "Signing in..." : "Sign in"}
       </button>

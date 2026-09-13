@@ -19,16 +19,10 @@ export default async function Home() {
     .order("name");
 
   const people = ((data ?? []) as PersonRow[]).map(mapPerson);
-  const email =
-    typeof claimsData.claims.email === "string"
-      ? claimsData.claims.email
-      : null;
-
   return (
     <PeopleDirectory
       people={people}
       loadError={error?.message ?? null}
-      userEmail={email}
     />
   );
 }

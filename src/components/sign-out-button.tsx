@@ -21,7 +21,7 @@ export function SignOutButton() {
       type="button"
       onClick={onSignOut}
       disabled={signingOut}
-      className="h-10 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 disabled:opacity-50"
+      className="h-9 rounded-lg border border-white/30 bg-transparent px-3 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-50"
     >
       {signingOut ? "Signing out..." : "Sign out"}
     </button>

@@ -473,7 +473,7 @@ export function PeopleProfileDrawer({
         className="absolute inset-0 bg-zinc-900/20"
         onClick={onClose}
       />
-      <aside className="relative flex h-full w-full max-w-xl flex-col bg-white shadow-xl">
+      <aside className="relative flex h-full w-full max-w-[54rem] flex-col bg-white shadow-xl">
         <div className="flex items-start justify-between border-b border-zinc-200 px-5 py-4">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
@@ -955,7 +955,7 @@ export function PeopleProfileDrawer({
                   <button
                     type="submit"
                     disabled={saving || deleting}
-                    className="h-10 rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+                    className="h-10 rounded-lg bg-bhp-navy px-4 text-sm font-medium text-white hover:bg-bhp-navy-deep disabled:opacity-50"
                   >
                     {saving
                       ? pendingFile

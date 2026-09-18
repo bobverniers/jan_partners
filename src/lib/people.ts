@@ -88,6 +88,8 @@ export const PERSON_STATUS_LABELS: Record<PersonStatus, string> = {
   inactive: "Inactive",
 };
 
+const NAME_SUFFIXES = new Set(["jr", "jr.", "sr", "sr.", "ii", "iii", "iv", "v"]);
+
 export function asStringList(
   value: string[] | string | null | undefined,
 ): string[] {
@@ -98,6 +100,58 @@ export function asStringList(
     return [value.trim()];
   }
   return [];
+}
+
+export function lastNameSortValue(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  if (trimmed.includes(",")) {
+    const [last, ...rest] = trimmed.split(",");
+    return `${last.trim()} ${rest.join(",").trim()}`.trim();
+  }
+
+  const parts = trimmed.split(/\s+/);
+  let lastIndex = parts.length - 1;
+  while (
+    lastIndex > 0 &&
+    NAME_SUFFIXES.has(parts[lastIndex].toLowerCase().replace(/,/g, ""))
+  ) {
+    lastIndex -= 1;
+  }
+
+  const lastName = parts[lastIndex];
+  const givenNames = parts.slice(0, lastIndex).join(" ");
+  const suffixes = parts.slice(lastIndex + 1).join(" ");
+  return [lastName, givenNames, suffixes].filter(Boolean).join(" ");
+}
+
+export function uniqueEmails(
+  values: Array<string | null | undefined>,
+): string[] {
+  const seen = new Set<string>();
+  const emails: string[] = [];
+
+  for (const value of values) {
+    const email = value?.trim();
+    if (!email || email === "—") {
+      continue;
+    }
+
+    const key = email.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    emails.push(email);
+  }
+
+  return emails.sort((left, right) =>
+    left.localeCompare(right, undefined, { sensitivity: "base" }),
+  );
 }
 
 export function mapPerson(row: PersonRow): Person {

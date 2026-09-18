@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState, type MouseEvent, type ReactNode } from "react";
 import {
   PERSON_STATUS_LABELS,
   PERSON_STATUSES,
+  lastNameSortValue,
   personMatchesQuery,
   type Person,
   type PersonStatus,
@@ -25,7 +27,6 @@ import { PeopleProfileDrawer } from "@/components/people-profile-drawer";
 import { signedCvUrl } from "@/lib/cv-storage";
 
 type SortKey =
-  | "starred"
   | "name"
   | "reference"
   | "cv"
@@ -246,21 +247,12 @@ const COLUMNS: {
   render: (person: Person) => ReactNode;
 }[] = [
   {
-    key: "starred",
-    label: "*",
-    sticky: true,
-    stickyClass: "left-0",
-    className: "w-10 bg-white",
-    sortValue: (person) => (person.starred ? "1" : "0"),
-    render: (person) => (person.starred ? "★" : ""),
-  },
-  {
     key: "name",
     label: "Name",
     sticky: true,
-    stickyClass: "left-10",
+    stickyClass: "left-0",
     className: `${TEXT_COL} bg-white font-medium text-zinc-900`,
-    sortValue: (person) => person.name,
+    sortValue: (person) => lastNameSortValue(person.name),
     render: (person) => <ExpandableText text={person.name} />,
   },
   {
@@ -540,7 +532,7 @@ export function PeopleDirectory({
       );
     });
 
-    const column = COLUMNS.find((item) => item.key === sortKey) ?? COLUMNS[1];
+    const column = COLUMNS.find((item) => item.key === sortKey) ?? COLUMNS[0];
 
     return [...filtered].sort((a, b) => {
       const left = column.sortValue(a).toLowerCase();
@@ -604,6 +596,12 @@ export function PeopleDirectory({
               Filters
               {selectedFilterCount > 0 ? ` (${selectedFilterCount})` : ""}
             </button>
+            <Link
+              href="/emails"
+              className="inline-flex h-10 items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50"
+            >
+              Emails
+            </Link>
             <button
               type="button"
               onClick={() => {

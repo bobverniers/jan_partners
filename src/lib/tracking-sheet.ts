@@ -264,7 +264,13 @@ function headerField(label: string): SheetField | null {
     .trim();
 
   if (!normalized) return null;
-  if (normalized === "name") return "name";
+  if (
+    normalized === "name" ||
+    normalized === "full name" ||
+    normalized === "candidate name"
+  ) {
+    return "name";
+  }
   if (normalized === "ref" || normalized.startsWith("ref ")) {
     return "referenceNumber";
   }

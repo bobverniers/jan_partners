@@ -17,6 +17,12 @@ import {
   uploadCvFile,
   validateCvFile,
 } from "@/lib/cv-storage";
+import {
+  TRACKING_SHEET_ACCEPT,
+  parseTrackingSheet,
+  validateTrackingSheetFile,
+  type TrackingSheetValues,
+} from "@/lib/tracking-sheet";
 import { createSupabaseClient } from "@/lib/supabase/client";
 
 type NullableFlag = "yes" | "no" | "";
@@ -48,7 +54,6 @@ type Draft = {
   enrolmentDate: string;
   notes: string;
   status: PersonStatus;
-  starred: boolean;
   tier: string;
   hasCv: NullableFlag;
   hasContract: NullableFlag;
@@ -87,7 +92,6 @@ function flagTo(value: NullableFlag): boolean | null {
 function emptyPerson(): Person {
   return {
     id: "",
-    starred: false,
     name: "",
     referenceNumber: null,
     cvUrl: null,
@@ -154,7 +158,6 @@ function personToDraft(person: Person): Draft {
     enrolmentDate: person.enrolmentDate ?? "",
     notes: person.notes ?? "",
     status: person.status,
-    starred: person.starred,
     tier: person.tier ?? "",
     hasCv: flagFrom(person.hasCv),
     hasContract: flagFrom(person.hasContract),
@@ -196,7 +199,6 @@ function draftToPerson(person: Person, draft: Draft): Person {
     enrolmentDate: blankToNull(draft.enrolmentDate),
     notes: blankToNull(draft.notes),
     status: draft.status,
-    starred: draft.starred,
     tier: blankToNull(draft.tier),
     hasCv: flagTo(draft.hasCv),
     hasContract: flagTo(draft.hasContract),
@@ -211,6 +213,20 @@ function draftToPerson(person: Person, draft: Draft): Person {
 
 const inputClass =
   "mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-900/10";
+
+function applyTrackingSheet(
+  current: Draft,
+  values: TrackingSheetValues,
+): Draft {
+  const next = { ...current };
+  (Object.keys(values) as (keyof TrackingSheetValues)[]).forEach((key) => {
+    const value = values[key];
+    if (value) {
+      next[key] = value;
+    }
+  });
+  return next;
+}
 
 function Field({
   label,
@@ -269,7 +285,10 @@ export function PeopleProfileDrawer({
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [removeStoredFile, setRemoveStoredFile] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
+  const [sheetInputKey, setSheetInputKey] = useState(0);
+  const [sheetNotice, setSheetNotice] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sheetInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setDraft(personToDraft(person ?? emptyPerson()));
@@ -280,6 +299,8 @@ export function PeopleProfileDrawer({
     setPendingFile(null);
     setRemoveStoredFile(false);
     setFileInputKey((current) => current + 1);
+    setSheetInputKey((current) => current + 1);
+    setSheetNotice(null);
   }, [person?.id, isNew]);
 
   useEffect(() => {
@@ -293,6 +314,38 @@ export function PeopleProfileDrawer({
   function update<K extends keyof Draft>(key: K, value: Draft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
     setSaved(false);
+  }
+
+  async function onTrackingSheet(file: File | null) {
+    if (!file) return;
+
+    const invalid = validateTrackingSheetFile(file);
+    if (invalid) {
+      setError(invalid);
+      setSheetInputKey((current) => current + 1);
+      return;
+    }
+
+    try {
+      const parsed = parseTrackingSheet(await file.arrayBuffer());
+      if (parsed.error || !parsed.values) {
+        setError(parsed.error ?? "Could not read that tracking sheet.");
+        setSheetNotice(null);
+        setSheetInputKey((current) => current + 1);
+        return;
+      }
+
+      const values = parsed.values;
+      setDraft((current) => applyTrackingSheet(current, values));
+      setError(null);
+      setSaved(false);
+      setSheetNotice(`Filled from ${file.name}. Review the form, then save.`);
+    } catch {
+      setError("Could not read that tracking sheet.");
+      setSheetNotice(null);
+    }
+
+    setSheetInputKey((current) => current + 1);
   }
 
   async function persistCv(personId: string, nextPerson: Person) {
@@ -499,8 +552,40 @@ export function PeopleProfileDrawer({
           <div className="flex-1 space-y-6 overflow-y-auto px-5 py-4">
             <section className="space-y-3">
               <h3 className="text-sm font-semibold text-zinc-900">
-                Basic information
+                Name
               </h3>
+              {isNew ? (
+                <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-3 py-3">
+                  <p className="text-sm font-medium text-zinc-900">
+                    Fill from tracking sheet
+                  </p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    Upload a BHP .xlsx for one person. The file is only used to
+                    fill this form and is not stored.
+                  </p>
+                  <input
+                    ref={sheetInputRef}
+                    key={sheetInputKey}
+                    type="file"
+                    accept={TRACKING_SHEET_ACCEPT}
+                    className="sr-only"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      void onTrackingSheet(file);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => sheetInputRef.current?.click()}
+                    className="mt-3 h-10 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                  >
+                    Upload Excel
+                  </button>
+                  {sheetNotice ? (
+                    <p className="mt-2 text-xs text-emerald-700">{sheetNotice}</p>
+                  ) : null}
+                </div>
+              ) : null}
               <Field label="Name">
                 <input
                   autoFocus={isNew}
@@ -510,69 +595,41 @@ export function PeopleProfileDrawer({
                   required
                 />
               </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Ref. #">
-                  <input
-                    className={inputClass}
-                    value={draft.referenceNumber}
-                    onChange={(event) =>
-                      update("referenceNumber", event.target.value)
-                    }
-                  />
-                </Field>
-                <Field label="Status">
-                  <select
-                    className={inputClass}
-                    value={draft.status}
-                    onChange={(event) =>
-                      update("status", event.target.value as PersonStatus)
-                    }
-                  >
-                    {PERSON_STATUSES.map((status) => (
-                      <option key={status} value={status}>
-                        {PERSON_STATUS_LABELS[status]}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              </div>
-              <label className="flex items-center gap-2 text-sm text-zinc-700">
-                <input
-                  type="checkbox"
-                  checked={draft.starred}
-                  onChange={(event) => update("starred", event.target.checked)}
-                />
-                Starred
-              </label>
-              <Field label="Primary residence">
+            </section>
+
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold text-zinc-900">
+                Contact
+              </h3>
+              <Field label="Email">
                 <input
                   className={inputClass}
-                  value={draft.primaryResidence}
+                  value={draft.email}
+                  onChange={(event) => update("email", event.target.value)}
+                />
+              </Field>
+              <Field label="Phone">
+                <input
+                  className={inputClass}
+                  value={draft.phone}
+                  onChange={(event) => update("phone", event.target.value)}
+                />
+              </Field>
+              <Field label="LinkedIn">
+                <input
+                  className={inputClass}
+                  value={draft.linkedinUrl}
                   onChange={(event) =>
-                    update("primaryResidence", event.target.value)
+                    update("linkedinUrl", event.target.value)
                   }
                 />
               </Field>
-              <Field label="Passports">
-                <textarea
-                  className={`${inputClass} min-h-20`}
-                  value={draft.passports}
-                  onChange={(event) => update("passports", event.target.value)}
-                  placeholder="One per line"
-                />
-              </Field>
-              <Field label="Preferred locations / exclusions">
-                <textarea
-                  className={`${inputClass} min-h-20`}
-                  value={draft.preferredLocations}
-                  onChange={(event) =>
-                    update("preferredLocations", event.target.value)
-                  }
-                />
-              </Field>
+            </section>
+
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold text-zinc-900">CV</h3>
               <div>
-                <span className="text-xs font-medium text-zinc-500">CV</span>
-                <div className="mt-1 flex gap-2">
+                <div className="flex gap-2">
                   <input
                     aria-label="CV link"
                     className="h-10 min-w-0 flex-1 rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-900/10"
@@ -650,6 +707,64 @@ export function PeopleProfileDrawer({
                   </p>
                 )}
               </div>
+            </section>
+
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold text-zinc-900">
+                Profile
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Ref. #">
+                  <input
+                    className={inputClass}
+                    value={draft.referenceNumber}
+                    onChange={(event) =>
+                      update("referenceNumber", event.target.value)
+                    }
+                  />
+                </Field>
+                <Field label="Status">
+                  <select
+                    className={inputClass}
+                    value={draft.status}
+                    onChange={(event) =>
+                      update("status", event.target.value as PersonStatus)
+                    }
+                  >
+                    {PERSON_STATUSES.map((status) => (
+                      <option key={status} value={status}>
+                        {PERSON_STATUS_LABELS[status]}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+              <Field label="Primary residence">
+                <input
+                  className={inputClass}
+                  value={draft.primaryResidence}
+                  onChange={(event) =>
+                    update("primaryResidence", event.target.value)
+                  }
+                />
+              </Field>
+              <Field label="Passports">
+                <textarea
+                  className={`${inputClass} min-h-20`}
+                  value={draft.passports}
+                  onChange={(event) => update("passports", event.target.value)}
+                  placeholder="One per line"
+                />
+              </Field>
+              <Field label="Preferred locations / exclusions">
+                <textarea
+                  className={`${inputClass} min-h-20`}
+                  value={draft.preferredLocations}
+                  onChange={(event) =>
+                    update("preferredLocations", event.target.value)
+                  }
+                />
+              </Field>
             </section>
 
             <section className="space-y-3">
@@ -759,7 +874,7 @@ export function PeopleProfileDrawer({
 
             <section className="space-y-3">
               <h3 className="text-sm font-semibold text-zinc-900">
-                Languages and contact
+                Languages
               </h3>
               <Field label="Languages">
                 <textarea
@@ -767,29 +882,6 @@ export function PeopleProfileDrawer({
                   value={draft.languages}
                   onChange={(event) => update("languages", event.target.value)}
                   placeholder="One per line"
-                />
-              </Field>
-              <Field label="LinkedIn">
-                <input
-                  className={inputClass}
-                  value={draft.linkedinUrl}
-                  onChange={(event) =>
-                    update("linkedinUrl", event.target.value)
-                  }
-                />
-              </Field>
-              <Field label="Email">
-                <input
-                  className={inputClass}
-                  value={draft.email}
-                  onChange={(event) => update("email", event.target.value)}
-                />
-              </Field>
-              <Field label="Phone">
-                <input
-                  className={inputClass}
-                  value={draft.phone}
-                  onChange={(event) => update("phone", event.target.value)}
                 />
               </Field>
             </section>

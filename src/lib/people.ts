@@ -4,7 +4,6 @@ export type PersonStatus = (typeof PERSON_STATUSES)[number];
 
 export type Person = {
   id: string;
-  starred: boolean;
   name: string;
   referenceNumber: string | null;
   cvUrl: string | null;
@@ -44,7 +43,6 @@ export type Person = {
 
 export type PersonRow = {
   id: string;
-  starred: boolean;
   name: string;
   reference_number: string | null;
   cv_url: string | null;
@@ -157,7 +155,6 @@ export function uniqueEmails(
 export function mapPerson(row: PersonRow): Person {
   return {
     id: row.id,
-    starred: row.starred,
     name: row.name,
     referenceNumber: row.reference_number,
     cvUrl: row.cv_url,
@@ -198,7 +195,6 @@ export function mapPerson(row: PersonRow): Person {
 
 export function toUpdatePayload(person: Person): Omit<PersonRow, "id"> {
   return {
-    starred: person.starred,
     name: person.name,
     reference_number: person.referenceNumber,
     cv_url: person.cvUrl,

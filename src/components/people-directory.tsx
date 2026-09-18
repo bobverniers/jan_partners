@@ -5,6 +5,7 @@ import { useMemo, useState, type MouseEvent, type ReactNode } from "react";
 import {
   PERSON_STATUS_LABELS,
   PERSON_STATUSES,
+  lastNameFirst,
   lastNameSortValue,
   personMatchesQuery,
   type Person,
@@ -253,7 +254,7 @@ const COLUMNS: {
     stickyClass: "left-0",
     className: `${TEXT_COL} bg-white font-medium text-zinc-900`,
     sortValue: (person) => lastNameSortValue(person.name),
-    render: (person) => <ExpandableText text={person.name} />,
+    render: (person) => <ExpandableText text={lastNameFirst(person.name)} />,
   },
   {
     key: "email",

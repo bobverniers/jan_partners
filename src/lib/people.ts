@@ -100,15 +100,19 @@ export function asStringList(
   return [];
 }
 
-export function lastNameSortValue(name: string): string {
+function splitPersonName(name: string): {
+  last: string;
+  given: string;
+  suffixes: string;
+} {
   const trimmed = name.trim();
   if (!trimmed) {
-    return "";
+    return { last: "", given: "", suffixes: "" };
   }
 
   if (trimmed.includes(",")) {
     const [last, ...rest] = trimmed.split(",");
-    return `${last.trim()} ${rest.join(",").trim()}`.trim();
+    return { last: last.trim(), given: rest.join(",").trim(), suffixes: "" };
   }
 
   const parts = trimmed.split(/\s+/);
@@ -120,10 +124,26 @@ export function lastNameSortValue(name: string): string {
     lastIndex -= 1;
   }
 
-  const lastName = parts[lastIndex];
-  const givenNames = parts.slice(0, lastIndex).join(" ");
-  const suffixes = parts.slice(lastIndex + 1).join(" ");
-  return [lastName, givenNames, suffixes].filter(Boolean).join(" ");
+  return {
+    last: parts[lastIndex] ?? "",
+    given: parts.slice(0, lastIndex).join(" "),
+    suffixes: parts.slice(lastIndex + 1).join(" "),
+  };
+}
+
+export function lastNameSortValue(name: string): string {
+  const { last, given, suffixes } = splitPersonName(name);
+  return [last, given, suffixes].filter(Boolean).join(" ");
+}
+
+export function lastNameFirst(name: string): string {
+  const { last, given, suffixes } = splitPersonName(name);
+  if (!last) {
+    return "";
+  }
+
+  const first = [given, suffixes].filter(Boolean).join(" ");
+  return first ? `${last}, ${first}` : last;
 }
 
 export function uniqueEmails(

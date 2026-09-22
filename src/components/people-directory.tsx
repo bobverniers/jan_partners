@@ -137,23 +137,24 @@ function asHref(value: string | null): string | null {
     return null;
   }
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  if (trimmed.includes("linkedin.com") || trimmed.includes(".")) {
+  if (/linkedin\.com/i.test(trimmed) && !/\s/.test(trimmed)) {
     return `https://${trimmed.replace(/^\/+/, "")}`;
   }
   return null;
 }
 
 function LinkCell({ value }: { value: string | null }) {
+  const display = empty(value);
   const href = asHref(value);
-  if (!href) return <>{empty(value)}</>;
+  if (!href) return <span className="break-all">{display}</span>;
   return (
     <a
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="text-zinc-900 underline decoration-zinc-300 underline-offset-2 hover:decoration-zinc-500"
+      className="break-all text-zinc-900 underline decoration-zinc-300 underline-offset-2 hover:decoration-zinc-500"
     >
-      Open
+      {display}
     </a>
   );
 }
@@ -273,14 +274,14 @@ const COLUMNS: {
   {
     key: "linkedin",
     label: "LinkedIn",
-    className: "min-w-24",
+    className: TEXT_COL,
     sortValue: (person) => person.linkedinUrl ?? "",
     render: (person) => <LinkCell value={person.linkedinUrl} />,
   },
   {
     key: "cv",
     label: "CV",
-    className: "min-w-16",
+    className: TEXT_COL,
     sortValue: (person) => person.cvFileName ?? person.cvUrl ?? "",
     render: (person) => <CvCell person={person} />,
   },

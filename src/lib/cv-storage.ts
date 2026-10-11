@@ -53,6 +53,26 @@ function objectPath(personId: string, fileName: string): string {
   return `${personId}/cv${ext ? `.${ext}` : ".pdf"}`;
 }
 
+export async function uploadNewCvFile(personId: string, file: File) {
+  const invalid = validateCvFile(file);
+  if (invalid) {
+    return { path: null as string | null, fileName: file.name, error: invalid };
+  }
+
+  const supabase = createSupabaseClient();
+  const path = objectPath(personId, file.name);
+  const { error } = await supabase.storage.from(CV_BUCKET).upload(path, file, {
+    upsert: false,
+    contentType: contentTypeFor(file),
+  });
+
+  return {
+    path: error ? null : path,
+    fileName: file.name,
+    error: error?.message ?? null,
+  };
+}
+
 export async function uploadCvFile(personId: string, file: File) {
   const invalid = validateCvFile(file);
   if (invalid) {

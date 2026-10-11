@@ -29,16 +29,12 @@ type NullableFlag = "yes" | "no" | "";
 
 type Draft = {
   name: string;
-  referenceNumber: string;
   cvUrl: string;
   cvFilePath: string;
   cvFileName: string;
   primaryResidence: string;
   passports: string;
   preferredLocations: string;
-  noticePeriod: string;
-  maximumDuration: string;
-  blackoutDates: string;
   mostRecentPosition: string;
   previousAssignments: string;
   yearsAsGm: string;
@@ -50,16 +46,8 @@ type Draft = {
   linkedinUrl: string;
   email: string;
   phone: string;
-  personalStatus: string;
-  enrolmentDate: string;
-  notes: string;
   status: PersonStatus;
-  tier: string;
-  hasCv: NullableFlag;
-  hasContract: NullableFlag;
-  hasTracking: NullableFlag;
   hasReferences: NullableFlag;
-  owner: string;
   recruiter: string;
   consultancy: string;
   dropboxComments: string;
@@ -93,15 +81,12 @@ function emptyPerson(): Person {
   return {
     id: "",
     name: "",
-    referenceNumber: null,
     cvUrl: null,
     cvFilePath: null,
     cvFileName: null,
     primaryResidence: null,
     passports: [],
     preferredLocations: null,
-    noticePeriod: null,
-    maximumDuration: null,
     mostRecentPosition: null,
     previousAssignments: [],
     yearsAsGm: null,
@@ -113,17 +98,8 @@ function emptyPerson(): Person {
     linkedinUrl: null,
     email: null,
     phone: null,
-    personalStatus: null,
-    blackoutDates: null,
-    enrolmentDate: null,
-    notes: null,
     status: "new",
-    tier: null,
-    hasCv: null,
-    hasContract: null,
-    hasTracking: null,
     hasReferences: null,
-    owner: null,
     recruiter: null,
     consultancy: null,
     dropboxComments: null,
@@ -133,16 +109,12 @@ function emptyPerson(): Person {
 function personToDraft(person: Person): Draft {
   return {
     name: person.name,
-    referenceNumber: person.referenceNumber ?? "",
     cvUrl: person.cvUrl ?? "",
     cvFilePath: person.cvFilePath ?? "",
     cvFileName: person.cvFileName ?? "",
     primaryResidence: person.primaryResidence ?? "",
     passports: asStringList(person.passports).join("\n"),
     preferredLocations: person.preferredLocations ?? "",
-    noticePeriod: person.noticePeriod ?? "",
-    maximumDuration: person.maximumDuration ?? "",
-    blackoutDates: person.blackoutDates ?? "",
     mostRecentPosition: person.mostRecentPosition ?? "",
     previousAssignments: asStringList(person.previousAssignments).join("\n"),
     yearsAsGm: person.yearsAsGm ?? "",
@@ -154,16 +126,8 @@ function personToDraft(person: Person): Draft {
     linkedinUrl: person.linkedinUrl ?? "",
     email: person.email ?? "",
     phone: person.phone ?? "",
-    personalStatus: person.personalStatus ?? "",
-    enrolmentDate: person.enrolmentDate ?? "",
-    notes: person.notes ?? "",
     status: person.status,
-    tier: person.tier ?? "",
-    hasCv: flagFrom(person.hasCv),
-    hasContract: flagFrom(person.hasContract),
-    hasTracking: flagFrom(person.hasTracking),
     hasReferences: flagFrom(person.hasReferences),
-    owner: person.owner ?? "",
     recruiter: person.recruiter ?? "",
     consultancy: person.consultancy ?? "",
     dropboxComments: person.dropboxComments ?? "",
@@ -174,16 +138,12 @@ function draftToPerson(person: Person, draft: Draft): Person {
   return {
     ...person,
     name: draft.name.trim(),
-    referenceNumber: blankToNull(draft.referenceNumber),
     cvUrl: blankToNull(draft.cvUrl),
     cvFilePath: blankToNull(draft.cvFilePath),
     cvFileName: blankToNull(draft.cvFileName),
     primaryResidence: blankToNull(draft.primaryResidence),
     passports: parseList(draft.passports),
     preferredLocations: blankToNull(draft.preferredLocations),
-    noticePeriod: blankToNull(draft.noticePeriod),
-    maximumDuration: blankToNull(draft.maximumDuration),
-    blackoutDates: blankToNull(draft.blackoutDates),
     mostRecentPosition: blankToNull(draft.mostRecentPosition),
     previousAssignments: parseList(draft.previousAssignments),
     yearsAsGm: blankToNull(draft.yearsAsGm),
@@ -195,16 +155,8 @@ function draftToPerson(person: Person, draft: Draft): Person {
     linkedinUrl: blankToNull(draft.linkedinUrl),
     email: blankToNull(draft.email),
     phone: blankToNull(draft.phone),
-    personalStatus: blankToNull(draft.personalStatus),
-    enrolmentDate: blankToNull(draft.enrolmentDate),
-    notes: blankToNull(draft.notes),
     status: draft.status,
-    tier: blankToNull(draft.tier),
-    hasCv: flagTo(draft.hasCv),
-    hasContract: flagTo(draft.hasContract),
-    hasTracking: flagTo(draft.hasTracking),
     hasReferences: flagTo(draft.hasReferences),
-    owner: blankToNull(draft.owner),
     recruiter: blankToNull(draft.recruiter),
     consultancy: blankToNull(draft.consultancy),
     dropboxComments: blankToNull(draft.dropboxComments),
@@ -363,7 +315,6 @@ export function PeopleProfileDrawer({
           ...nextPerson,
           cvFilePath: uploaded.path,
           cvFileName: uploaded.fileName,
-          hasCv: true,
         },
         error: null as string | null,
       };
@@ -426,7 +377,6 @@ export function PeopleProfileDrawer({
           .update({
             cv_file_path: updated.cvFilePath,
             cv_file_name: updated.cvFileName,
-            has_cv: updated.hasCv,
           })
           .eq("id", data.id);
 
@@ -659,9 +609,6 @@ export function PeopleProfileDrawer({
                       setPendingFile(file);
                       setRemoveStoredFile(false);
                       setSaved(false);
-                      if (draft.hasCv !== "yes") {
-                        update("hasCv", "yes");
-                      }
                     }}
                   />
                   <button
@@ -713,32 +660,21 @@ export function PeopleProfileDrawer({
               <h3 className="text-sm font-semibold text-zinc-900">
                 Profile
               </h3>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Ref. #">
-                  <input
-                    className={inputClass}
-                    value={draft.referenceNumber}
-                    onChange={(event) =>
-                      update("referenceNumber", event.target.value)
-                    }
-                  />
-                </Field>
-                <Field label="Status">
-                  <select
-                    className={inputClass}
-                    value={draft.status}
-                    onChange={(event) =>
-                      update("status", event.target.value as PersonStatus)
-                    }
-                  >
-                    {PERSON_STATUSES.map((status) => (
-                      <option key={status} value={status}>
-                        {PERSON_STATUS_LABELS[status]}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              </div>
+              <Field label="Status">
+                <select
+                  className={inputClass}
+                  value={draft.status}
+                  onChange={(event) =>
+                    update("status", event.target.value as PersonStatus)
+                  }
+                >
+                  {PERSON_STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {PERSON_STATUS_LABELS[status]}
+                    </option>
+                  ))}
+                </select>
+              </Field>
               <Field label="Primary residence">
                 <input
                   className={inputClass}
@@ -762,41 +698,6 @@ export function PeopleProfileDrawer({
                   value={draft.preferredLocations}
                   onChange={(event) =>
                     update("preferredLocations", event.target.value)
-                  }
-                />
-              </Field>
-            </section>
-
-            <section className="space-y-3">
-              <h3 className="text-sm font-semibold text-zinc-900">
-                Availability
-              </h3>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Notice period">
-                  <input
-                    className={inputClass}
-                    value={draft.noticePeriod}
-                    onChange={(event) =>
-                      update("noticePeriod", event.target.value)
-                    }
-                  />
-                </Field>
-                <Field label="Maximum duration">
-                  <input
-                    className={inputClass}
-                    value={draft.maximumDuration}
-                    onChange={(event) =>
-                      update("maximumDuration", event.target.value)
-                    }
-                  />
-                </Field>
-              </div>
-              <Field label="Blackout dates">
-                <input
-                  className={inputClass}
-                  value={draft.blackoutDates}
-                  onChange={(event) =>
-                    update("blackoutDates", event.target.value)
                   }
                 />
               </Field>
@@ -891,65 +792,6 @@ export function PeopleProfileDrawer({
                 BHP / database
               </h3>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Personal status">
-                  <input
-                    className={inputClass}
-                    value={draft.personalStatus}
-                    onChange={(event) =>
-                      update("personalStatus", event.target.value)
-                    }
-                  />
-                </Field>
-                <Field label="Enrolment date">
-                  <input
-                    className={inputClass}
-                    value={draft.enrolmentDate}
-                    onChange={(event) =>
-                      update("enrolmentDate", event.target.value)
-                    }
-                  />
-                </Field>
-              </div>
-              <Field label="Notes">
-                <textarea
-                  className={`${inputClass} min-h-24`}
-                  value={draft.notes}
-                  onChange={(event) => update("notes", event.target.value)}
-                />
-              </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="A/B">
-                  <input
-                    className={inputClass}
-                    value={draft.tier}
-                    onChange={(event) => update("tier", event.target.value)}
-                  />
-                </Field>
-                <Field label="JK/JC">
-                  <input
-                    className={inputClass}
-                    value={draft.owner}
-                    onChange={(event) => update("owner", event.target.value)}
-                  />
-                </Field>
-                <Field label="Has CV">
-                  <FlagSelect
-                    value={draft.hasCv}
-                    onChange={(value) => update("hasCv", value)}
-                  />
-                </Field>
-                <Field label="Contract">
-                  <FlagSelect
-                    value={draft.hasContract}
-                    onChange={(value) => update("hasContract", value)}
-                  />
-                </Field>
-                <Field label="Tracking">
-                  <FlagSelect
-                    value={draft.hasTracking}
-                    onChange={(value) => update("hasTracking", value)}
-                  />
-                </Field>
                 <Field label="References">
                   <FlagSelect
                     value={draft.hasReferences}

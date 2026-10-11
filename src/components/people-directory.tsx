@@ -13,7 +13,6 @@ import {
 } from "@/lib/people";
 import {
   EMPTY_FILTERS,
-  NOTICE_OPTIONS,
   YEAR_OPTIONS,
   activeFilterCount,
   filterChips,
@@ -29,13 +28,10 @@ import { signedCvUrl } from "@/lib/cv-storage";
 
 type SortKey =
   | "name"
-  | "reference"
   | "cv"
   | "residence"
   | "passports"
   | "preferredLocations"
-  | "noticePeriod"
-  | "maximumDuration"
   | "position"
   | "previousAssignments"
   | "yearsAsGm"
@@ -47,25 +43,14 @@ type SortKey =
   | "linkedin"
   | "email"
   | "phone"
-  | "personalStatus"
-  | "blackoutDates"
-  | "enrolmentDate"
-  | "notes"
   | "status"
-  | "tier"
-  | "hasCv"
-  | "hasContract"
-  | "hasTracking"
   | "hasReferences"
-  | "owner"
   | "recruiter"
   | "consultancy"
   | "comments";
 
 const TEXT_COL = "w-[32ch] max-w-[32ch]";
-const NOTES_COL = "w-[52ch] max-w-[52ch]";
 const DEFAULT_WORD_LIMIT = 5;
-const NOTES_WORD_LIMIT = 10;
 
 function empty(value: string | null | undefined): string {
   const trimmed = value?.trim();
@@ -286,25 +271,11 @@ const COLUMNS: {
     render: (person) => <CvCell person={person} />,
   },
   {
-    key: "reference",
-    label: "Ref. #",
-    className: "min-w-16",
-    sortValue: (person) => person.referenceNumber ?? "",
-    render: (person) => empty(person.referenceNumber),
-  },
-  {
     key: "status",
     label: "Status",
     className: "min-w-24",
     sortValue: (person) => PERSON_STATUS_LABELS[person.status],
     render: (person) => <StatusBadge status={person.status} />,
-  },
-  {
-    key: "tier",
-    label: "A/B",
-    className: "min-w-14",
-    sortValue: (person) => person.tier ?? "",
-    render: (person) => empty(person.tier),
   },
   {
     key: "residence",
@@ -327,22 +298,6 @@ const COLUMNS: {
     sortValue: (person) => person.preferredLocations ?? "",
     render: (person) => (
       <ExpandableText text={empty(person.preferredLocations)} />
-    ),
-  },
-  {
-    key: "noticePeriod",
-    label: "Notice",
-    className: TEXT_COL,
-    sortValue: (person) => person.noticePeriod ?? "",
-    render: (person) => <ExpandableText text={empty(person.noticePeriod)} />,
-  },
-  {
-    key: "maximumDuration",
-    label: "Max duration",
-    className: TEXT_COL,
-    sortValue: (person) => person.maximumDuration ?? "",
-    render: (person) => (
-      <ExpandableText text={empty(person.maximumDuration)} />
     ),
   },
   {
@@ -410,72 +365,11 @@ const COLUMNS: {
     render: (person) => <ExpandableText text={joined(person.languages)} />,
   },
   {
-    key: "personalStatus",
-    label: "Personal status",
-    className: TEXT_COL,
-    sortValue: (person) => person.personalStatus ?? "",
-    render: (person) => <ExpandableText text={empty(person.personalStatus)} />,
-  },
-  {
-    key: "blackoutDates",
-    label: "Blackout dates",
-    className: TEXT_COL,
-    sortValue: (person) => person.blackoutDates ?? "",
-    render: (person) => <ExpandableText text={empty(person.blackoutDates)} />,
-  },
-  {
-    key: "enrolmentDate",
-    label: "Enrolment date",
-    className: TEXT_COL,
-    sortValue: (person) => person.enrolmentDate ?? "",
-    render: (person) => <ExpandableText text={empty(person.enrolmentDate)} />,
-  },
-  {
-    key: "notes",
-    label: "Notes",
-    className: NOTES_COL,
-    sortValue: (person) => person.notes ?? "",
-    render: (person) => (
-      <ExpandableText
-        text={empty(person.notes)}
-        wordLimit={NOTES_WORD_LIMIT}
-      />
-    ),
-  },
-  {
-    key: "hasCv",
-    label: "Has CV",
-    className: "min-w-20",
-    sortValue: (person) => yesNo(person.hasCv),
-    render: (person) => yesNo(person.hasCv),
-  },
-  {
-    key: "hasContract",
-    label: "Contract",
-    className: "min-w-24",
-    sortValue: (person) => yesNo(person.hasContract),
-    render: (person) => yesNo(person.hasContract),
-  },
-  {
-    key: "hasTracking",
-    label: "Tracking",
-    className: "min-w-24",
-    sortValue: (person) => yesNo(person.hasTracking),
-    render: (person) => yesNo(person.hasTracking),
-  },
-  {
     key: "hasReferences",
     label: "References",
     className: "min-w-28",
     sortValue: (person) => yesNo(person.hasReferences),
     render: (person) => yesNo(person.hasReferences),
-  },
-  {
-    key: "owner",
-    label: "JK/JC",
-    className: "min-w-20",
-    sortValue: (person) => person.owner ?? "",
-    render: (person) => empty(person.owner),
   },
   {
     key: "recruiter",
@@ -642,17 +536,6 @@ export function PeopleDirectory({
                   key={option.id}
                   selected={filters.languages.includes(option.id)}
                   onClick={() => updateFilters("languages", option.id)}
-                >
-                  {option.label}
-                </FilterChip>
-              ))}
-            </FilterGroup>
-            <FilterGroup title="Notice">
-              {NOTICE_OPTIONS.map((option) => (
-                <FilterChip
-                  key={option.id}
-                  selected={filters.notice.includes(option.id)}
-                  onClick={() => updateFilters("notice", option.id)}
                 >
                   {option.label}
                 </FilterChip>

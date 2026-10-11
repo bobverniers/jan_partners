@@ -6,13 +6,10 @@ export const TRACKING_SHEET_MAX_BYTES = 5 * 1024 * 1024;
 
 export type TrackingSheetValues = {
   name: string;
-  referenceNumber: string;
   cvUrl: string;
   primaryResidence: string;
   passports: string;
   preferredLocations: string;
-  noticePeriod: string;
-  maximumDuration: string;
   mostRecentPosition: string;
   previousAssignments: string;
   yearsAsGm: string;
@@ -24,23 +21,16 @@ export type TrackingSheetValues = {
   linkedinUrl: string;
   email: string;
   phone: string;
-  personalStatus: string;
-  blackoutDates: string;
-  enrolmentDate: string;
-  notes: string;
 };
 
 type SheetField = keyof TrackingSheetValues;
 
 const EMPTY_VALUES: TrackingSheetValues = {
   name: "",
-  referenceNumber: "",
   cvUrl: "",
   primaryResidence: "",
   passports: "",
   preferredLocations: "",
-  noticePeriod: "",
-  maximumDuration: "",
   mostRecentPosition: "",
   previousAssignments: "",
   yearsAsGm: "",
@@ -52,14 +42,9 @@ const EMPTY_VALUES: TrackingSheetValues = {
   linkedinUrl: "",
   email: "",
   phone: "",
-  personalStatus: "",
-  blackoutDates: "",
-  enrolmentDate: "",
-  notes: "",
 };
 
 const COMMA_LIST_FIELDS = new Set<SheetField>(["passports", "languages"]);
-const DATE_FIELDS = new Set<SheetField>(["enrolmentDate"]);
 
 type Cell = {
   text: string;
@@ -198,13 +183,9 @@ function fieldValue(field: SheetField, cell: Cell): string {
     return hyperlink;
   }
 
-  let text = cell.text.trim();
+  const text = cell.text.trim();
   if (!text) {
     return "";
-  }
-
-  if (DATE_FIELDS.has(field) && isExcelSerial(text)) {
-    text = excelSerialToDate(Number(text));
   }
 
   if (COMMA_LIST_FIELDS.has(field)) {
@@ -271,9 +252,6 @@ function headerField(label: string): SheetField | null {
   ) {
     return "name";
   }
-  if (normalized === "ref" || normalized.startsWith("ref ")) {
-    return "referenceNumber";
-  }
   if (normalized.includes("cv")) return "cvUrl";
   if (
     normalized.includes("primary residence") ||
@@ -283,13 +261,6 @@ function headerField(label: string): SheetField | null {
   }
   if (normalized.startsWith("passport")) return "passports";
   if (normalized.includes("preferred location")) return "preferredLocations";
-  if (normalized.includes("notice")) return "noticePeriod";
-  if (
-    normalized.includes("maximum duration") ||
-    normalized.includes("max duration")
-  ) {
-    return "maximumDuration";
-  }
   if (normalized.includes("most recent position")) return "mostRecentPosition";
   if (
     normalized.includes("previous") ||
@@ -312,15 +283,6 @@ function headerField(label: string): SheetField | null {
   if (normalized.includes("linkedin")) return "linkedinUrl";
   if (normalized === "email") return "email";
   if (normalized.startsWith("phone")) return "phone";
-  if (normalized === "status") return "personalStatus";
-  if (normalized.includes("blackout")) return "blackoutDates";
-  if (
-    normalized.includes("enrolment") ||
-    normalized.includes("enrollment")
-  ) {
-    return "enrolmentDate";
-  }
-  if (normalized === "notes") return "notes";
   return null;
 }
 
@@ -475,13 +437,3 @@ function decodeXml(value: string): string {
     .replace(/&amp;/g, "&");
 }
 
-function isExcelSerial(value: string): boolean {
-  if (!/^\d+(\.\d+)?$/.test(value)) return false;
-  const number = Number(value);
-  return number > 20000 && number < 80000;
-}
-
-function excelSerialToDate(serial: number): string {
-  const utc = Date.UTC(1899, 11, 30) + Math.round(serial) * 86400000;
-  return new Date(utc).toISOString().slice(0, 10);
-}

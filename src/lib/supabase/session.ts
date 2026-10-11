@@ -35,8 +35,9 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const signedIn = Boolean(data?.claims);
   const onLogin = request.nextUrl.pathname.startsWith("/login");
+  const onApply = request.nextUrl.pathname.startsWith("/apply");
 
-  if (!signedIn && !onLogin) {
+  if (!signedIn && !onLogin && !onApply) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

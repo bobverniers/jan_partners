@@ -2,13 +2,6 @@ import { type Person } from "@/lib/people";
 
 export const YEAR_OPTIONS = [5, 10, 15, 20] as const;
 
-export const NOTICE_OPTIONS = [
-  { id: "immediate", label: "Immediate" },
-  { id: "twoWeeks", label: "Within 2 weeks" },
-  { id: "oneMonth", label: "Within 1 month" },
-  { id: "longer", label: "Longer than 1 month" },
-] as const;
-
 export const SPECIALTY_OPTIONS = [
   { id: "resort", label: "Resort", pattern: /resort/i },
   { id: "city", label: "City", pattern: /city/i },
@@ -40,14 +33,11 @@ export const LANGUAGE_OPTIONS = [
   { id: "slovak", label: "Slovak", pattern: /\bslovak\b/, tokens: [] },
 ] as const;
 
-export type NoticeId = (typeof NOTICE_OPTIONS)[number]["id"];
-
 export type PeopleFilters = {
   residences: string[];
   specialties: string[];
   languages: string[];
   minYears: number[];
-  notice: NoticeId[];
 };
 
 export const EMPTY_FILTERS: PeopleFilters = {
@@ -55,7 +45,6 @@ export const EMPTY_FILTERS: PeopleFilters = {
   specialties: [],
   languages: [],
   minYears: [],
-  notice: [],
 };
 
 const RESIDENCE_ALIASES: Record<string, string> = {
@@ -102,8 +91,7 @@ export function activeFilterCount(filters: PeopleFilters): number {
     filters.residences.length +
     filters.specialties.length +
     filters.languages.length +
-    filters.minYears.length +
-    filters.notice.length
+    filters.minYears.length
   );
 }
 
@@ -119,54 +107,6 @@ export function parseYearsAsGm(value: string | null): number | null {
     .filter((number) => number >= 1 && number <= 55);
   const years = [...fromDates, ...fromCounts];
   return years.length > 0 ? Math.max(...years) : null;
-}
-
-export function parseNoticeDays(value: string | null): number | null {
-  if (!value) return null;
-  const text = value.toLowerCase();
-  if (/case by case|depends|subject to calendar|tba|tbc/.test(text)) {
-    return null;
-  }
-  if (
-    !/\d/.test(text) &&
-    !/(one|two|three|four|a)\s+(day|days|week|weeks|month|months)/.test(text) &&
-    /(immediate|none|non\b|no notice|n\/a|\bna\b|open\b|available|minimum|directly)/.test(
-      text,
-    )
-  ) {
-    return 0;
-  }
-
-  const amounts: number[] = [];
-  const unitDays = (unit: string, count: number) => {
-    if (unit.startsWith("day")) return count;
-    if (unit.startsWith("week")) return count * 7;
-    return count * 30;
-  };
-
-  for (const match of text.matchAll(
-    /(\d+)\s*(day|days|week|weeks|month|months|mth|mths)/g,
-  )) {
-    amounts.push(unitDays(match[2], Number(match[1])));
-  }
-
-  const words: Record<string, number> = {
-    a: 1,
-    one: 1,
-    two: 2,
-    three: 3,
-    four: 4,
-  };
-  for (const match of text.matchAll(
-    /\b(a|one|two|three|four)\s+(day|days|week|weeks|month|months)\b/g,
-  )) {
-    amounts.push(unitDays(match[2], words[match[1]]));
-  }
-
-  if (amounts.length === 0) {
-    return null;
-  }
-  return Math.max(...amounts);
 }
 
 export function residencesOf(person: Person): string[] {
@@ -268,18 +208,6 @@ export function personMatchesFilters(
     }
   }
 
-  if (filters.notice.length > 0) {
-    const days = parseNoticeDays(person.noticePeriod);
-    if (days == null) return false;
-    const matches = filters.notice.some((id) => {
-      if (id === "immediate") return days <= 0;
-      if (id === "twoWeeks") return days <= 14;
-      if (id === "oneMonth") return days <= 31;
-      return days > 31;
-    });
-    if (!matches) return false;
-  }
-
   return true;
 }
 
@@ -333,17 +261,6 @@ export function filterChips(filters: PeopleFilters): {
       clear: (current) => ({
         ...current,
         minYears: current.minYears.filter((value) => value !== years),
-      }),
-    });
-  }
-  for (const value of filters.notice) {
-    const option = NOTICE_OPTIONS.find((item) => item.id === value);
-    chips.push({
-      key: `notice:${value}`,
-      label: `Notice: ${option?.label ?? value}`,
-      clear: (current) => ({
-        ...current,
-        notice: current.notice.filter((item) => item !== value),
       }),
     });
   }

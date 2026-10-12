@@ -380,7 +380,7 @@ export function ApplicationForm() {
           placeholder="One per line"
         />
       </Question>
-      <Question label="Which locations do you prefer to work?">
+      <Question label="Preferred locations">
         <textarea
           value={preferredLocations}
           onChange={(event) => setPreferredLocations(event.target.value)}

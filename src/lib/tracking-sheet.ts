@@ -10,11 +10,8 @@ export type TrackingSheetValues = {
   primaryResidence: string;
   passports: string;
   preferredLocations: string;
-  mostRecentPosition: string;
-  previousAssignments: string;
   yearsAsGm: string;
   specialty: string;
-  numberOfKeys: string;
   openingExperience: string;
   capexRefurbExperience: string;
   languages: string;
@@ -31,11 +28,8 @@ const EMPTY_VALUES: TrackingSheetValues = {
   primaryResidence: "",
   passports: "",
   preferredLocations: "",
-  mostRecentPosition: "",
-  previousAssignments: "",
   yearsAsGm: "",
   specialty: "",
-  numberOfKeys: "",
   openingExperience: "",
   capexRefurbExperience: "",
   languages: "",
@@ -261,19 +255,9 @@ function headerField(label: string): SheetField | null {
   }
   if (normalized.startsWith("passport")) return "passports";
   if (normalized.includes("preferred location")) return "preferredLocations";
-  if (normalized.includes("most recent position")) return "mostRecentPosition";
-  if (
-    normalized.includes("previous") ||
-    normalized.includes("senior assignment")
-  ) {
-    return "previousAssignments";
-  }
   if (normalized.includes("years as gm")) return "yearsAsGm";
   if (normalized.includes("speciaity") || normalized.includes("specialty")) {
     return "specialty";
-  }
-  if (normalized === "keys" || normalized.includes("number of keys")) {
-    return "numberOfKeys";
   }
   if (normalized.includes("opening")) return "openingExperience";
   if (normalized.includes("capex") || normalized.includes("refurb")) {

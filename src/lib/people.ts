@@ -11,11 +11,8 @@ export type Person = {
   primaryResidence: string | null;
   passports: string[];
   preferredLocations: string | null;
-  mostRecentPosition: string | null;
-  previousAssignments: string[];
   yearsAsGm: string | null;
   specialty: string | null;
-  numberOfKeys: string | null;
   openingExperience: string | null;
   capexRefurbExperience: string | null;
   languages: string[];
@@ -38,11 +35,8 @@ export type PersonRow = {
   primary_residence: string | null;
   passports: string[] | null;
   preferred_locations: string | null;
-  most_recent_position: string | null;
-  previous_assignments: string[] | null;
   years_as_gm: string | null;
   specialty: string | null;
-  number_of_keys: string | null;
   opening_experience: string | null;
   capex_refurb_experience: string | null;
   languages: string[] | null;
@@ -158,11 +152,8 @@ export function mapPerson(row: PersonRow): Person {
     primaryResidence: row.primary_residence,
     passports: asStringList(row.passports),
     preferredLocations: row.preferred_locations,
-    mostRecentPosition: row.most_recent_position,
-    previousAssignments: asStringList(row.previous_assignments),
     yearsAsGm: row.years_as_gm,
     specialty: row.specialty,
-    numberOfKeys: row.number_of_keys,
     openingExperience: row.opening_experience,
     capexRefurbExperience: row.capex_refurb_experience,
     languages: asStringList(row.languages),
@@ -186,11 +177,8 @@ export function toUpdatePayload(person: Person): Omit<PersonRow, "id"> {
     primary_residence: person.primaryResidence,
     passports: asStringList(person.passports),
     preferred_locations: person.preferredLocations,
-    most_recent_position: person.mostRecentPosition,
-    previous_assignments: asStringList(person.previousAssignments),
     years_as_gm: person.yearsAsGm,
     specialty: person.specialty,
-    number_of_keys: person.numberOfKeys,
     opening_experience: person.openingExperience,
     capex_refurb_experience: person.capexRefurbExperience,
     languages: asStringList(person.languages),
@@ -215,7 +203,6 @@ export function personMatchesQuery(person: Person, query: string): boolean {
     person.name,
     person.email,
     person.phone,
-    person.mostRecentPosition,
     person.primaryResidence,
     person.specialty,
     person.linkedinUrl,
@@ -223,7 +210,6 @@ export function personMatchesQuery(person: Person, query: string): boolean {
     person.cvFileName,
     asStringList(person.languages).join(" "),
     asStringList(person.passports).join(" "),
-    asStringList(person.previousAssignments).join(" "),
     person.recruiter,
     person.dropboxComments,
   ]

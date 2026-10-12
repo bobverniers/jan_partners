@@ -35,11 +35,8 @@ type Draft = {
   primaryResidence: string;
   passports: string;
   preferredLocations: string;
-  mostRecentPosition: string;
-  previousAssignments: string;
   yearsAsGm: string;
   specialty: string;
-  numberOfKeys: string;
   openingExperience: string;
   capexRefurbExperience: string;
   languages: string;
@@ -87,11 +84,8 @@ function emptyPerson(): Person {
     primaryResidence: null,
     passports: [],
     preferredLocations: null,
-    mostRecentPosition: null,
-    previousAssignments: [],
     yearsAsGm: null,
     specialty: null,
-    numberOfKeys: null,
     openingExperience: null,
     capexRefurbExperience: null,
     languages: [],
@@ -115,11 +109,8 @@ function personToDraft(person: Person): Draft {
     primaryResidence: person.primaryResidence ?? "",
     passports: asStringList(person.passports).join("\n"),
     preferredLocations: person.preferredLocations ?? "",
-    mostRecentPosition: person.mostRecentPosition ?? "",
-    previousAssignments: asStringList(person.previousAssignments).join("\n"),
     yearsAsGm: person.yearsAsGm ?? "",
     specialty: person.specialty ?? "",
-    numberOfKeys: person.numberOfKeys ?? "",
     openingExperience: person.openingExperience ?? "",
     capexRefurbExperience: person.capexRefurbExperience ?? "",
     languages: asStringList(person.languages).join("\n"),
@@ -144,11 +135,8 @@ function draftToPerson(person: Person, draft: Draft): Person {
     primaryResidence: blankToNull(draft.primaryResidence),
     passports: parseList(draft.passports),
     preferredLocations: blankToNull(draft.preferredLocations),
-    mostRecentPosition: blankToNull(draft.mostRecentPosition),
-    previousAssignments: parseList(draft.previousAssignments),
     yearsAsGm: blankToNull(draft.yearsAsGm),
     specialty: blankToNull(draft.specialty),
-    numberOfKeys: blankToNull(draft.numberOfKeys),
     openingExperience: blankToNull(draft.openingExperience),
     capexRefurbExperience: blankToNull(draft.capexRefurbExperience),
     languages: parseList(draft.languages),
@@ -707,45 +695,13 @@ export function PeopleProfileDrawer({
               <h3 className="text-sm font-semibold text-zinc-900">
                 Professional experience
               </h3>
-              <Field label="Most recent position">
+              <Field label="Years as GM">
                 <input
                   className={inputClass}
-                  value={draft.mostRecentPosition}
-                  onChange={(event) =>
-                    update("mostRecentPosition", event.target.value)
-                  }
+                  value={draft.yearsAsGm}
+                  onChange={(event) => update("yearsAsGm", event.target.value)}
                 />
               </Field>
-              <Field label="Previous senior assignments">
-                <textarea
-                  className={`${inputClass} min-h-24`}
-                  value={draft.previousAssignments}
-                  onChange={(event) =>
-                    update("previousAssignments", event.target.value)
-                  }
-                  placeholder="One per line"
-                />
-              </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Years as GM">
-                  <input
-                    className={inputClass}
-                    value={draft.yearsAsGm}
-                    onChange={(event) =>
-                      update("yearsAsGm", event.target.value)
-                    }
-                  />
-                </Field>
-                <Field label="Number of keys">
-                  <input
-                    className={inputClass}
-                    value={draft.numberOfKeys}
-                    onChange={(event) =>
-                      update("numberOfKeys", event.target.value)
-                    }
-                  />
-                </Field>
-              </div>
               <Field label="Specialty">
                 <input
                   className={inputClass}

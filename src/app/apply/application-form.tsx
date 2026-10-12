@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { CV_ACCEPT, uploadNewCvFile, validateCvFile } from "@/lib/cv-storage";
 import { createSupabaseClient } from "@/lib/supabase/client";
 
@@ -56,6 +56,89 @@ function Question({
   );
 }
 
+const LANGUAGE_EXAMPLE = `Example:
+English – Spoken: Fluent, Written: Fluent
+Dutch – Spoken: Advanced, Written: Intermediate
+Spanish – Spoken: Intermediate, Written: Basic`;
+
+function LanguagesField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [hover, setHover] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const open = hover || pinned;
+
+  useEffect(() => {
+    if (!pinned) return;
+
+    function closeIfOutside(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setPinned(false);
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setPinned(false);
+    }
+
+    document.addEventListener("pointerdown", closeIfOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeIfOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [pinned]);
+
+  return (
+    <div ref={rootRef}>
+      <div
+        className="text-sm font-medium leading-5 text-zinc-900"
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+      >
+        <label htmlFor="languages">
+          What languages do you speak, and what is your proficiency in each?
+        </label>
+        <button
+          type="button"
+          aria-label="Show an example"
+          aria-expanded={open}
+          className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full align-middle text-zinc-400 hover:text-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/20"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => setPinned((current) => !current)}
+        >
+          <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" aria-hidden="true">
+            <circle cx="10" cy="10" r="7.25" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M10 9.25v4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <circle cx="10" cy="6.25" r="0.8" fill="currentColor" />
+          </svg>
+        </button>
+        {open ? (
+          <span
+            role="tooltip"
+            className="mt-2 block whitespace-pre-line rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-left text-sm font-normal leading-5 text-zinc-600"
+          >
+            {LANGUAGE_EXAMPLE}
+          </span>
+        ) : null}
+      </div>
+      <p className="mt-1 text-sm leading-5 text-zinc-500">
+        Please list each language on a separate line and indicate your spoken and
+        written proficiency (Basic, Intermediate, Advanced, or Fluent).
+      </p>
+      <textarea
+        id="languages"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className={`${inputClass} min-h-20`}
+      />
+    </div>
+  );
+}
+
 function ChoiceGroup<T extends string>({
   legend,
   name,
@@ -108,11 +191,8 @@ export function ApplicationForm() {
   const [residence, setResidence] = useState("");
   const [passports, setPassports] = useState("");
   const [preferredLocations, setPreferredLocations] = useState("");
-  const [position, setPosition] = useState("");
-  const [assignments, setAssignments] = useState("");
   const [years, setYears] = useState("");
   const [specialty, setSpecialty] = useState<Specialty>("");
-  const [keys, setKeys] = useState("");
   const [opening, setOpening] = useState("");
   const [capex, setCapex] = useState<YesNo>("");
   const [languages, setLanguages] = useState("");
@@ -124,12 +204,13 @@ export function ApplicationForm() {
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     const trimmedName = name.trim();
-    const profileLink = linkedInLink(linkedin);
+    const trimmedLinkedin = linkedin.trim();
+    const profileLink = trimmedLinkedin ? linkedInLink(trimmedLinkedin) : null;
     if (!trimmedName) {
       setError("Please enter your name.");
       return;
     }
-    if (!profileLink) {
+    if (trimmedLinkedin && !profileLink) {
       setError("Please enter a LinkedIn profile link.");
       return;
     }
@@ -172,11 +253,8 @@ export function ApplicationForm() {
         primary_residence: blankToNull(residence),
         passports: lines(passports),
         preferred_locations: blankToNull(preferredLocations),
-        most_recent_position: blankToNull(position),
-        previous_assignments: lines(assignments),
         years_as_gm: blankToNull(years),
         specialty: specialty || null,
-        number_of_keys: blankToNull(keys),
         opening_experience: blankToNull(opening),
         capex_refurb_experience: capex || null,
         languages: lines(languages),
@@ -203,7 +281,7 @@ export function ApplicationForm() {
 
   return (
     <form onSubmit={onSubmit} className="mt-8 space-y-6">
-      <Question label="What is your full name?">
+      <Question label="Full name">
         <input
           required
           value={name}
@@ -212,7 +290,7 @@ export function ApplicationForm() {
           autoComplete="name"
         />
       </Question>
-      <Question label="What is your email address?">
+      <Question label="Email address">
         <input
           type="email"
           value={email}
@@ -221,7 +299,7 @@ export function ApplicationForm() {
           autoComplete="email"
         />
       </Question>
-      <Question label="What is your phone number?">
+      <Question label="Phone number">
         <input
           type="tel"
           value={phone}
@@ -230,9 +308,8 @@ export function ApplicationForm() {
           autoComplete="tel"
         />
       </Question>
-      <Question label="What is your LinkedIn profile?">
+      <Question label="LinkedIn profile">
         <input
-          required
           type="url"
           inputMode="url"
           value={linkedin}
@@ -268,7 +345,7 @@ export function ApplicationForm() {
           PDF, Word, or image. Maximum 10 MB.
         </span>
       </div>
-      <Question label="Where do you currently live?">
+      <Question label="Current Residence">
         <input
           value={residence}
           onChange={(event) => setResidence(event.target.value)}
@@ -290,22 +367,7 @@ export function ApplicationForm() {
           className={`${inputClass} min-h-20`}
         />
       </Question>
-      <Question label="What is your most recent position?">
-        <input
-          value={position}
-          onChange={(event) => setPosition(event.target.value)}
-          className={inputClass}
-        />
-      </Question>
-      <Question label="What previous assignments have you held?">
-        <textarea
-          value={assignments}
-          onChange={(event) => setAssignments(event.target.value)}
-          className={`${inputClass} min-h-24`}
-          placeholder="One per line"
-        />
-      </Question>
-      <Question label="How many years have you worked as a general manager?">
+      <Question label="How many years have you worked as a General Manager?">
         <input
           value={years}
           onChange={(event) => setYears(event.target.value)}
@@ -319,13 +381,6 @@ export function ApplicationForm() {
         options={["City", "Resort", "Both"] as const}
         onChange={setSpecialty}
       />
-      <Question label="How many hotel keys have you managed?">
-        <input
-          value={keys}
-          onChange={(event) => setKeys(event.target.value)}
-          className={inputClass}
-        />
-      </Question>
       <Question label="What opening experience do you have?">
         <textarea
           value={opening}
@@ -340,14 +395,7 @@ export function ApplicationForm() {
         options={["Yes", "No"] as const}
         onChange={setCapex}
       />
-      <Question label="Which languages do you speak?">
-        <textarea
-          value={languages}
-          onChange={(event) => setLanguages(event.target.value)}
-          className={`${inputClass} min-h-20`}
-          placeholder="One per line"
-        />
-      </Question>
+      <LanguagesField value={languages} onChange={setLanguages} />
       <ChoiceGroup
         legend="Do you have your own consultancy?"
         name="consultancy"

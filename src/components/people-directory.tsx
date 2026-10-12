@@ -32,11 +32,8 @@ type SortKey =
   | "residence"
   | "passports"
   | "preferredLocations"
-  | "position"
-  | "previousAssignments"
   | "yearsAsGm"
   | "specialty"
-  | "keys"
   | "openingExperience"
   | "capex"
   | "languages"
@@ -301,24 +298,6 @@ const COLUMNS: {
     ),
   },
   {
-    key: "position",
-    label: "Most recent position",
-    className: TEXT_COL,
-    sortValue: (person) => person.mostRecentPosition ?? "",
-    render: (person) => (
-      <ExpandableText text={empty(person.mostRecentPosition)} />
-    ),
-  },
-  {
-    key: "previousAssignments",
-    label: "Previous assignments",
-    className: TEXT_COL,
-    sortValue: (person) => joined(person.previousAssignments),
-    render: (person) => (
-      <ExpandableText text={joined(person.previousAssignments)} />
-    ),
-  },
-  {
     key: "yearsAsGm",
     label: "Years as GM",
     className: TEXT_COL,
@@ -331,13 +310,6 @@ const COLUMNS: {
     className: TEXT_COL,
     sortValue: (person) => person.specialty ?? "",
     render: (person) => <ExpandableText text={empty(person.specialty)} />,
-  },
-  {
-    key: "keys",
-    label: "Keys",
-    className: TEXT_COL,
-    sortValue: (person) => person.numberOfKeys ?? "",
-    render: (person) => <ExpandableText text={empty(person.numberOfKeys)} />,
   },
   {
     key: "openingExperience",

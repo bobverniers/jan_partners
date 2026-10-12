@@ -181,6 +181,20 @@ function ChoiceGroup<T extends string>({
   );
 }
 
+function ApplyHeading({ title, text }: { title: string; text: string }) {
+  return (
+    <>
+      <p className="text-xs font-medium uppercase tracking-wide text-bhp-navy">
+        Application
+      </p>
+      <h1 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold text-bhp-navy">
+        {title}
+      </h1>
+      <p className="mt-2 text-sm text-zinc-500">{text}</p>
+    </>
+  );
+}
+
 export function ApplicationForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -273,14 +287,20 @@ export function ApplicationForm() {
 
   if (sent) {
     return (
-      <p className="mt-8 text-sm text-zinc-700">
-        Thank you. Your application has been received.
-      </p>
+      <ApplyHeading
+        title="Thank you"
+        text="We have received your application."
+      />
     );
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-8 space-y-6">
+    <>
+      <ApplyHeading
+        title="Tell us about your experience"
+        text="No account is needed. Submit the form and we will review it."
+      />
+      <form onSubmit={onSubmit} className="mt-8 space-y-6">
       <Question label="Full name">
         <input
           required
@@ -412,5 +432,6 @@ export function ApplicationForm() {
         {submitting ? "Sending..." : "Submit application"}
       </button>
     </form>
+    </>
   );
 }

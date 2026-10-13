@@ -100,7 +100,7 @@ function LanguagesField({
         onMouseLeave={() => setHover(false)}
       >
         <label htmlFor="languages">
-          What languages do you speak, and what is your proficiency in each?
+          Which languages do you speak, and what is your proficiency in each?
         </label>
         <button
           type="button"

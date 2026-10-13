@@ -1,103 +1,128 @@
-import { type Person } from "@/lib/people";
+import {
+  PERSON_STATUS_LABELS,
+  consultancyLabel,
+  placeLabels,
+  specialtyLabel,
+  type Person,
+} from "@/lib/people";
+
+export const BLANK_FILTER = "Blank";
 
 export const YEAR_OPTIONS = [5, 10, 15, 20] as const;
 
-export const SPECIALTY_OPTIONS = [
-  { id: "resort", label: "Resort", pattern: /resort/i },
-  { id: "city", label: "City", pattern: /city/i },
-  { id: "residential", label: "Residential", pattern: /resi(dential|dences)?\b/i },
-  { id: "villas", label: "Villas", pattern: /villa/i },
-  { id: "golf", label: "Golf", pattern: /golf/i },
-  { id: "boutique", label: "Boutique", pattern: /boutique/i },
-  { id: "luxury", label: "Luxury", pattern: /luxury|ultra-luxury/i },
-  { id: "airport", label: "Airport", pattern: /airport/i },
-  { id: "convention", label: "Convention", pattern: /convention|mice/i },
-  { id: "allrounder", label: "All-rounder", pattern: /all[- ]?round|all segments|^all$/i },
+const LANGUAGE_OPTIONS: {
+  label: string;
+  pattern: RegExp;
+  tokens: readonly string[];
+}[] = [
+  { label: "English", pattern: /\benglish\b|\beng\b|\buk\b/i, tokens: ["e"] },
+  { label: "Spanish", pattern: /\bspanish\b/i, tokens: ["sp", "es"] },
+  { label: "French", pattern: /\bfrench\b/i, tokens: ["f", "fr"] },
+  { label: "German", pattern: /\bgerman\b/i, tokens: ["d", "de"] },
+  { label: "Dutch", pattern: /\bdutch\b|\bflemish\b/i, tokens: ["nl"] },
+  { label: "Italian", pattern: /\bitalian\b/i, tokens: ["it", "ita"] },
+  { label: "Portuguese", pattern: /\bportuguese\b/i, tokens: ["pt"] },
+  { label: "Swedish", pattern: /\bswedish\b/i, tokens: ["sv"] },
+  { label: "Norwegian", pattern: /\bnorwegian\b/i, tokens: [] },
+  { label: "Danish", pattern: /\bdanish\b/i, tokens: [] },
+  { label: "Finnish", pattern: /\bfinnish\b/i, tokens: [] },
+  { label: "Icelandic", pattern: /\bicelandic\b/i, tokens: [] },
+  { label: "Greek", pattern: /\bgreek\b/i, tokens: [] },
+  { label: "Turkish", pattern: /\bturkish\b/i, tokens: [] },
+  { label: "Russian", pattern: /\brussian\b/i, tokens: [] },
+  { label: "Ukrainian", pattern: /\bukrainian\b/i, tokens: [] },
+  { label: "Polish", pattern: /\bpolish\b/i, tokens: [] },
+  { label: "Czech", pattern: /\bczech\b/i, tokens: [] },
+  { label: "Slovak", pattern: /\bslovak\b/i, tokens: [] },
+  { label: "Hungarian", pattern: /\bhungarian\b/i, tokens: [] },
+  { label: "Romanian", pattern: /\bromanian\b/i, tokens: [] },
+  { label: "Bulgarian", pattern: /\bbulgarian\b/i, tokens: [] },
+  { label: "Croatian", pattern: /\bcroatian\b/i, tokens: [] },
+  { label: "Serbian", pattern: /\bserbian\b/i, tokens: [] },
+  { label: "Slovenian", pattern: /\bslovenian\b|\bslovene\b/i, tokens: [] },
+  { label: "Albanian", pattern: /\balbanian\b/i, tokens: [] },
+  { label: "Mandarin", pattern: /\bmandarin\b/i, tokens: [] },
+  { label: "Cantonese", pattern: /\bcantonese\b/i, tokens: [] },
+  { label: "Chinese", pattern: /\bchinese\b/i, tokens: [] },
+  { label: "Japanese", pattern: /\bjapanese\b/i, tokens: ["jp"] },
+  { label: "Korean", pattern: /\bkorean\b/i, tokens: [] },
+  { label: "Thai", pattern: /\bthai\b/i, tokens: [] },
+  { label: "Vietnamese", pattern: /\bvietnamese\b/i, tokens: [] },
+  { label: "Indonesian", pattern: /\bindonesian\b/i, tokens: [] },
+  { label: "Malay", pattern: /\bmalay\b/i, tokens: [] },
+  { label: "Hindi", pattern: /\bhindi\b/i, tokens: [] },
+  { label: "Urdu", pattern: /\burdu\b/i, tokens: [] },
+  { label: "Bengali", pattern: /\bbengali\b/i, tokens: [] },
+  { label: "Tamil", pattern: /\btamil\b/i, tokens: [] },
+  { label: "Tagalog", pattern: /\btagalog\b|\bfilipino\b/i, tokens: [] },
+  { label: "Arabic", pattern: /\barabic\b/i, tokens: ["ar"] },
+  { label: "Hebrew", pattern: /\bhebrew\b/i, tokens: [] },
+  { label: "Persian", pattern: /\bpersian\b|\bfarsi\b/i, tokens: [] },
+  { label: "Swahili", pattern: /\bswahili\b/i, tokens: [] },
+  { label: "Afrikaans", pattern: /\bafrikaans\b/i, tokens: [] },
+  { label: "Catalan", pattern: /\bcatalan\b/i, tokens: [] },
+];
+
+export const FILTER_FIELDS = [
+  { key: "status", label: "Status" },
+  { key: "residence", label: "Residence" },
+  { key: "preferredLocations", label: "Preferred locations" },
+  { key: "yearsAsGm", label: "Years as GM" },
+  { key: "specialty", label: "Specialty" },
+  { key: "capex", label: "Capex / refurb" },
+  { key: "languages", label: "Languages" },
+  { key: "hasReferences", label: "References" },
+  { key: "recruiter", label: "Recruiter" },
+  { key: "consultancy", label: "Consultancy" },
 ] as const;
 
-export const LANGUAGE_OPTIONS = [
-  { id: "english", label: "English", pattern: /\benglish\b|\beng\b|\buk\b/, tokens: ["e"] },
-  { id: "spanish", label: "Spanish", pattern: /\bspanish\b/, tokens: ["sp", "es"] },
-  { id: "french", label: "French", pattern: /\bfrench\b/, tokens: ["f", "fr"] },
-  { id: "german", label: "German", pattern: /\bgerman\b/, tokens: ["d", "de"] },
-  { id: "dutch", label: "Dutch", pattern: /\bdutch\b/, tokens: ["nl"] },
-  { id: "italian", label: "Italian", pattern: /\bitalian\b/, tokens: ["it", "ita"] },
-  { id: "portuguese", label: "Portuguese", pattern: /\bportuguese\b/, tokens: ["pt"] },
-  { id: "swedish", label: "Swedish", pattern: /\bswedish\b/, tokens: ["sv"] },
-  { id: "turkish", label: "Turkish", pattern: /\bturkish\b/, tokens: [] },
-  { id: "greek", label: "Greek", pattern: /\bgreek\b/, tokens: [] },
-  { id: "danish", label: "Danish", pattern: /\bdanish\b/, tokens: [] },
-  { id: "norwegian", label: "Norwegian", pattern: /\bnorwegian\b/, tokens: [] },
-  { id: "japanese", label: "Japanese", pattern: /\bjapanese\b/, tokens: ["jp"] },
-  { id: "arabic", label: "Arabic", pattern: /\barabic\b/, tokens: ["ar"] },
-  { id: "slovak", label: "Slovak", pattern: /\bslovak\b/, tokens: [] },
-] as const;
+export type FilterKey = (typeof FILTER_FIELDS)[number]["key"];
 
-export type PeopleFilters = {
-  residences: string[];
-  specialties: string[];
-  languages: string[];
-  minYears: number[];
-};
+export type PeopleFilters = Record<FilterKey, string[]>;
 
 export const EMPTY_FILTERS: PeopleFilters = {
-  residences: [],
-  specialties: [],
+  status: [],
+  residence: [],
+  preferredLocations: [],
+  yearsAsGm: [],
+  specialty: [],
+  capex: [],
   languages: [],
-  minYears: [],
+  hasReferences: [],
+  recruiter: [],
+  consultancy: [],
 };
 
-const RESIDENCE_ALIASES: Record<string, string> = {
-  us: "United States",
-  usa: "United States",
-  "united states": "United States",
-  america: "United States",
-  uk: "United Kingdom",
-  "united kingdom": "United Kingdom",
-  england: "United Kingdom",
-  "great britain": "United Kingdom",
-  britain: "United Kingdom",
-  gb: "United Kingdom",
-  uae: "UAE",
-  "abu dhabi": "UAE",
-  dubai: "UAE",
-  spain: "Spain",
-  france: "France",
-  paris: "France",
-  germany: "Germany",
-  switzerland: "Switzerland",
-  thailand: "Thailand",
-  portugal: "Portugal",
-  indonesia: "Indonesia",
-  australia: "Australia",
-  australian: "Australia",
-  malaysia: "Malaysia",
-  malasyia: "Malaysia",
-  cyprus: "Cyprus",
-  netherlands: "Netherlands",
-  nl: "Netherlands",
-  austria: "Austria",
-  italy: "Italy",
-};
-
-export function toggleValue<T>(current: T[], value: T): T[] {
-  return current.includes(value)
-    ? current.filter((item) => item !== value)
-    : [...current, value];
+function text(value: string | null | undefined): string[] {
+  const trimmed = value?.trim();
+  return trimmed ? [trimmed] : [];
 }
 
-export function activeFilterCount(filters: PeopleFilters): number {
-  return (
-    filters.residences.length +
-    filters.specialties.length +
-    filters.languages.length +
-    filters.minYears.length
-  );
+function languageLabels(values: string[]): string[] {
+  const found = new Set<string>();
+
+  for (const raw of values) {
+    const parts = raw
+      .split(/\n|[,;/|]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    for (const part of parts) {
+      const token = part.toLowerCase().replace(/\.$/, "");
+      for (const option of LANGUAGE_OPTIONS) {
+        if (option.pattern.test(part) || option.tokens.includes(token)) {
+          found.add(option.label);
+        }
+      }
+    }
+  }
+
+  return [...found];
 }
 
 export function parseYearsAsGm(value: string | null): number | null {
   if (!value) return null;
-  const now = 2026;
+  const now = new Date().getFullYear();
   const fromDates = [...value.matchAll(/\b((?:19|20)\d{2})\b/g)]
     .map((match) => Number(match[1]))
     .filter((year) => year >= 1970 && year <= now)
@@ -109,103 +134,98 @@ export function parseYearsAsGm(value: string | null): number | null {
   return years.length > 0 ? Math.max(...years) : null;
 }
 
-export function residencesOf(person: Person): string[] {
-  const raw = person.primaryResidence;
-  if (!raw) return [];
-  const cleaned = raw
-    .replace(/\([^)]*\)/g, " ")
-    .replace(/\buntil\b.*$/i, " ")
-    .replace(/\bfrom\b.*$/i, " ");
-  const parts = cleaned.split(/[|/,&]+|\band\b/i);
+function yearBuckets(person: Person): string[] {
+  const years = parseYearsAsGm(person.yearsAsGm);
+  if (years == null) return [];
+  return YEAR_OPTIONS.filter((min) => years >= min).map((min) => `${min}+`);
+}
+
+function fieldIsBlank(person: Person, key: FilterKey): boolean {
+  if (key === "yearsAsGm") return !person.yearsAsGm?.trim();
+  if (key === "specialty") return !person.specialty?.trim();
+  if (key === "languages") return !person.languages.some((item) => item.trim());
+  if (key === "residence") return !person.primaryResidence?.trim();
+  if (key === "preferredLocations") return !person.preferredLocations?.trim();
+  return valuesForFilter(person, key).length === 0;
+}
+
+export function valuesForFilter(person: Person, key: FilterKey): string[] {
+  switch (key) {
+    case "status":
+      return [PERSON_STATUS_LABELS[person.status]];
+    case "residence":
+      return placeLabels(person.primaryResidence);
+    case "preferredLocations":
+      return placeLabels(person.preferredLocations);
+    case "yearsAsGm":
+      return yearBuckets(person);
+    case "specialty":
+      return text(specialtyLabel(person.specialty));
+    case "capex":
+      return text(person.capexRefurbExperience);
+    case "languages":
+      return languageLabels(person.languages);
+    case "hasReferences":
+      if (person.hasReferences === true) return ["Yes"];
+      if (person.hasReferences === false) return ["No"];
+      return [];
+    case "recruiter":
+      return text(person.recruiter);
+    case "consultancy":
+      return text(consultancyLabel(person.consultancy));
+  }
+}
+
+export function toggleValue<T>(current: T[], value: T): T[] {
+  return current.includes(value)
+    ? current.filter((item) => item !== value)
+    : [...current, value];
+}
+
+export function activeFilterCount(filters: PeopleFilters): number {
+  return FILTER_FIELDS.reduce(
+    (total, field) => total + filters[field.key].length,
+    0,
+  );
+}
+
+export function filterOptions(people: Person[], key: FilterKey): string[] {
   const found = new Set<string>();
-  for (const part of parts) {
-    const token = part.replace(/[-–].*$/, " ").trim().toLowerCase();
-    if (!token || token.length < 2) continue;
-    const mapped = RESIDENCE_ALIASES[token];
-    if (mapped) {
-      found.add(mapped);
+  let hasBlank = false;
+
+  for (const person of people) {
+    if (fieldIsBlank(person, key)) {
+      hasBlank = true;
       continue;
     }
-    for (const [alias, label] of Object.entries(RESIDENCE_ALIASES)) {
-      if (token.includes(alias)) found.add(label);
-    }
+    for (const value of valuesForFilter(person, key)) found.add(value);
   }
-  return [...found];
-}
 
-function languageTokens(person: Person): { blob: string; tokens: string[] } {
-  const blob = person.languages.join(" ").toLowerCase();
-  const tokens = person.languages
-    .flatMap((item) => item.split(/[/,;&]+|\band\b/i))
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
-  return { blob, tokens };
-}
+  if (key === "specialty") {
+    const options = ["City", "Resort", "Both"].filter((label) => found.has(label));
+    if (hasBlank) options.unshift(BLANK_FILTER);
+    return options;
+  }
 
-export function personHasLanguage(person: Person, languageId: string): boolean {
-  const option = LANGUAGE_OPTIONS.find((item) => item.id === languageId);
-  if (!option) return false;
-  const { blob, tokens } = languageTokens(person);
-  if (option.pattern.test(blob)) return true;
-  return option.tokens.some((token) =>
-    tokens.some((item) => item === token || item === `${token}.`),
+  const options = [...found].sort((left, right) =>
+    left.localeCompare(right, undefined, { numeric: true, sensitivity: "base" }),
   );
-}
-
-export function personHasSpecialty(person: Person, specialtyId: string): boolean {
-  const option = SPECIALTY_OPTIONS.find((item) => item.id === specialtyId);
-  if (!option || !person.specialty) return false;
-  return option.pattern.test(person.specialty);
-}
-
-export function residenceOptions(people: Person[]): string[] {
-  return [...new Set(people.flatMap(residencesOf))].sort((left, right) =>
-    left.localeCompare(right),
-  );
-}
-
-export function specialtyOptions(people: Person[]): (typeof SPECIALTY_OPTIONS)[number][] {
-  return SPECIALTY_OPTIONS.filter((option) =>
-    people.some((person) => personHasSpecialty(person, option.id)),
-  );
-}
-
-export function languageOptions(people: Person[]): (typeof LANGUAGE_OPTIONS)[number][] {
-  return LANGUAGE_OPTIONS.filter((option) =>
-    people.some((person) => personHasLanguage(person, option.id)),
-  );
+  if (hasBlank) options.unshift(BLANK_FILTER);
+  return options;
 }
 
 export function personMatchesFilters(
   person: Person,
   filters: PeopleFilters,
 ): boolean {
-  if (filters.residences.length > 0) {
-    const residences = residencesOf(person);
-    if (!filters.residences.some((value) => residences.includes(value))) {
-      return false;
-    }
-  }
+  for (const field of FILTER_FIELDS) {
+    const selected = filters[field.key];
+    if (selected.length === 0) continue;
 
-  if (
-    filters.specialties.length > 0 &&
-    !filters.specialties.some((value) => personHasSpecialty(person, value))
-  ) {
-    return false;
-  }
-
-  if (
-    filters.languages.length > 0 &&
-    !filters.languages.some((value) => personHasLanguage(person, value))
-  ) {
-    return false;
-  }
-
-  if (filters.minYears.length > 0) {
-    const years = parseYearsAsGm(person.yearsAsGm);
-    if (years == null || !filters.minYears.some((min) => years >= min)) {
-      return false;
-    }
+    const tokens = fieldIsBlank(person, field.key)
+      ? [BLANK_FILTER]
+      : valuesForFilter(person, field.key);
+    if (!selected.some((value) => tokens.includes(value))) return false;
   }
 
   return true;
@@ -222,47 +242,17 @@ export function filterChips(filters: PeopleFilters): {
     clear: (current: PeopleFilters) => PeopleFilters;
   }[] = [];
 
-  for (const residence of filters.residences) {
-    chips.push({
-      key: `residence:${residence}`,
-      label: `Residence: ${residence}`,
-      clear: (current) => ({
-        ...current,
-        residences: current.residences.filter((value) => value !== residence),
-      }),
-    });
-  }
-  for (const specialty of filters.specialties) {
-    const option = SPECIALTY_OPTIONS.find((item) => item.id === specialty);
-    chips.push({
-      key: `specialty:${specialty}`,
-      label: `Specialty: ${option?.label ?? specialty}`,
-      clear: (current) => ({
-        ...current,
-        specialties: current.specialties.filter((value) => value !== specialty),
-      }),
-    });
-  }
-  for (const language of filters.languages) {
-    const option = LANGUAGE_OPTIONS.find((item) => item.id === language);
-    chips.push({
-      key: `language:${language}`,
-      label: `Language: ${option?.label ?? language}`,
-      clear: (current) => ({
-        ...current,
-        languages: current.languages.filter((value) => value !== language),
-      }),
-    });
-  }
-  for (const years of filters.minYears) {
-    chips.push({
-      key: `years:${years}`,
-      label: `Years as GM: ${years}+`,
-      clear: (current) => ({
-        ...current,
-        minYears: current.minYears.filter((value) => value !== years),
-      }),
-    });
+  for (const field of FILTER_FIELDS) {
+    for (const value of filters[field.key]) {
+      chips.push({
+        key: `${field.key}:${value}`,
+        label: `${field.label}: ${value}`,
+        clear: (current) => ({
+          ...current,
+          [field.key]: current[field.key].filter((item) => item !== value),
+        }),
+      });
+    }
   }
 
   return chips;

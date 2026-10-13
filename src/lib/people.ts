@@ -58,6 +58,31 @@ export const PERSON_STATUS_LABELS: Record<PersonStatus, string> = {
 
 const NAME_SUFFIXES = new Set(["jr", "jr.", "sr", "sr.", "ii", "iii", "iv", "v"]);
 
+function isFullyUppercase(word: string): boolean {
+  const letters = word.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ]/g, "");
+  return letters.length >= 2 && letters === letters.toUpperCase();
+}
+
+function titleCaseWord(word: string): string {
+  if (!isFullyUppercase(word)) return word;
+  const suffix = word.toLowerCase().replace(/\./g, "");
+  if (NAME_SUFFIXES.has(suffix)) return word.toUpperCase();
+  return word
+    .toLowerCase()
+    .replace(
+      /(^|[^a-zà-öø-ÿ])([a-zà-öø-ÿ])/g,
+      (_, boundary: string, letter: string) => boundary + letter.toUpperCase(),
+    );
+}
+
+function titleCaseWords(value: string): string {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(titleCaseWord)
+    .join(" ");
+}
+
 export function asStringList(
   value: string[] | string | null | undefined,
 ): string[] {
@@ -70,50 +95,157 @@ export function asStringList(
   return [];
 }
 
-function splitPersonName(name: string): {
-  last: string;
-  given: string;
-  suffixes: string;
-} {
-  const trimmed = name.trim();
+function splitPersonName(name: string): { last: string; given: string } {
+  const trimmed = name.trim().replace(/\s+/g, " ");
   if (!trimmed) {
-    return { last: "", given: "", suffixes: "" };
+    return { last: "", given: "" };
   }
 
   if (trimmed.includes(",")) {
-    const [last, ...rest] = trimmed.split(",");
-    return { last: last.trim(), given: rest.join(",").trim(), suffixes: "" };
+    const [lastPart, ...rest] = trimmed.split(",");
+    const givenWords = titleCaseWords(rest.join(",").trim())
+      .split(" ")
+      .filter(Boolean);
+    const lastWords = titleCaseWords(lastPart.trim()).split(" ").filter(Boolean);
+    if (givenWords.length === 0) {
+      return { last: lastWords.join(" "), given: "" };
+    }
+    return {
+      given: givenWords[0],
+      last: [...givenWords.slice(1), ...lastWords].join(" "),
+    };
   }
 
-  const parts = trimmed.split(/\s+/);
-  let lastIndex = parts.length - 1;
-  while (
-    lastIndex > 0 &&
-    NAME_SUFFIXES.has(parts[lastIndex].toLowerCase().replace(/,/g, ""))
-  ) {
-    lastIndex -= 1;
+  const parts = trimmed.split(" ").map(titleCaseWord);
+  if (parts.length === 1) {
+    return { last: parts[0], given: "" };
   }
 
   return {
-    last: parts[lastIndex] ?? "",
-    given: parts.slice(0, lastIndex).join(" "),
-    suffixes: parts.slice(lastIndex + 1).join(" "),
+    last: parts.slice(1).join(" "),
+    given: parts[0],
   };
 }
 
 export function lastNameSortValue(name: string): string {
-  const { last, given, suffixes } = splitPersonName(name);
-  return [last, given, suffixes].filter(Boolean).join(" ");
+  const { last, given } = splitPersonName(name);
+  return [last, given].filter(Boolean).join(" ");
 }
 
 export function lastNameFirst(name: string): string {
-  const { last, given, suffixes } = splitPersonName(name);
+  const { last, given } = splitPersonName(name);
   if (!last) {
     return "";
   }
 
-  const first = [given, suffixes].filter(Boolean).join(" ");
-  return first ? `${last}, ${first}` : last;
+  return given ? `${last}, ${given}` : last;
+}
+
+export function specialtyLabel(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  const city = /\bcity\b/i.test(trimmed);
+  const resort = /\bresorts?\b/i.test(trimmed);
+  if (/\bboth\b/i.test(trimmed) || (city && resort)) return "Both";
+  if (city) return "City";
+  if (resort) return "Resort";
+  return null;
+}
+
+const PLACE_FILLER =
+  /^(open|willing|flexible|anywhere|everywhere|somewhere|nowhere|any|all|none|no|yes|prefer|preferred|preference|preferences|available|currently|presently|now|based|basing|living|live|lives|lived|located|location|locations|residing|resident|residence|relocation|relocate|relocating|worldwide|global|international|remote|tbd|na|various|multiple|other|others|etc|please|would|like|liked|work|working|works|in|a|an|for|with|my|i|am|im|i'm|looking|happy|consider|considering|considered|destination|destinations|place|places|hotel|hotels|resort|resorts|only|also|very|really|can|could|should|want|wants|wanted|ideally|possibly|maybe|perhaps|not|but|at|near|around|within|throughout|across|over|under|be|been|being|to|from|on|by|as|is|are|was|were|this|that|these|those|some|more|most|either|neither|just|still|already|always|never|here|there|where|when|while|which|who|what|how|if|then|than|so|too|into|onto|upon|per|via|about|above|after|before|during|until|since|between|among|including|include|includes|especially|mainly|mostly|primarily|preferably|home|abroad|overseas|locally|region|regions|area|areas|country|countries|world|negotiable|depends|depending|opportunity|opportunities|position|positions|role|roles|family|lifestyle|life|quality|great|good|best|love|loved|enjoy|wife|husband|children|kids|child|school|schools|end|start|starting|beginning|move|moving|moved|happy|relocate)$/i;
+
+const PLACE_CONNECTOR =
+  /^(of|de|del|da|di|la|le|les|el|al|van|von|der|den|dos|das|do|du|es|st|saint|san|santa|são|sao|the)$/i;
+
+const PLACE_ALIASES: Record<string, string> = {
+  us: "United States",
+  usa: "United States",
+  "united states": "United States",
+  "united states of america": "United States",
+  uk: "United Kingdom",
+  "united kingdom": "United Kingdom",
+  britain: "United Kingdom",
+  "great britain": "United Kingdom",
+  uae: "UAE",
+  "united arab emirates": "UAE",
+  eu: "Europe",
+};
+
+function placeAliasKey(value: string): string {
+  return value.toLowerCase().replace(/\./g, "").replace(/\s+/g, " ").trim();
+}
+
+function formatPlace(value: string): string {
+  const alias = PLACE_ALIASES[placeAliasKey(value)];
+  if (alias) return alias;
+
+  return value
+    .split(/\s+/)
+    .map((word, index) => {
+      const bare = word.replace(/^[.'’]+|[.'’]+$/g, "");
+      if (index > 0 && PLACE_CONNECTOR.test(bare)) return bare.toLowerCase();
+      const letters = bare.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ]/g, "");
+      if (!letters) return word;
+      if (letters.length <= 3 && letters === letters.toUpperCase()) {
+        return word.toUpperCase();
+      }
+      if (letters === letters.toLowerCase() || letters === letters.toUpperCase()) {
+        return bare.charAt(0).toUpperCase() + bare.slice(1).toLowerCase();
+      }
+      return word;
+    })
+    .join(" ");
+}
+
+function placeWords(value: string): string[] {
+  return value
+    .replace(/[()[\]{}]/g, " ")
+    .replace(/\b\d[\d./-]*\b/g, " ")
+    .replace(/[^\p{L}\s.'’-]/gu, " ")
+    .split(/\s+/)
+    .map((word) => word.replace(/^[.'’]+|[.'’]+$/g, ""))
+    .filter(Boolean);
+}
+
+function keepPlaceWords(words: string[]): string[] {
+  let start = 0;
+  let end = words.length;
+  const filler = (word: string) => PLACE_FILLER.test(word);
+  const edge = (word: string) => /^(the|of)$/i.test(word);
+  while (start < end && (filler(words[start]) || edge(words[start]))) start += 1;
+  while (end > start && (filler(words[end - 1]) || edge(words[end - 1]))) end -= 1;
+  return words.slice(start, end).filter((word) => !filler(word) || PLACE_CONNECTOR.test(word));
+}
+
+export function placeLabels(value: string | null | undefined): string[] {
+  const trimmed = value?.trim();
+  if (!trimmed) return [];
+
+  const found = new Map<string, string>();
+  const notes = [...trimmed.matchAll(/\(([^)]*)\)/g)].map((match) => match[1]);
+  const chunks = [trimmed.replace(/\([^)]*\)/g, " "), ...notes].flatMap((part) =>
+    part.split(/\n|[,;|/&]+|\band\b|\bor\b|\bbut\b/i),
+  );
+
+  for (const chunk of chunks) {
+    const words = keepPlaceWords(placeWords(chunk));
+    if (words.length === 0 || words.length > 4) continue;
+    const label = formatPlace(words.join(" "));
+    if (label.length < 2) continue;
+    const key = placeAliasKey(label);
+    if (!found.has(key)) found.set(key, label);
+  }
+
+  return [...found.values()];
+}
+
+export function consultancyLabel(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  if (/^(n|no)$/i.test(trimmed)) return "No";
+  if (/^(y|yes)$/i.test(trimmed)) return "Yes";
+  return trimmed;
 }
 
 export function uniqueEmails(

@@ -5,6 +5,7 @@ import { useMemo, useState, type MouseEvent, type ReactNode } from "react";
 import {
   PERSON_STATUS_LABELS,
   PERSON_STATUSES,
+  consultancyLabel,
   lastNameFirst,
   lastNameSortValue,
   personMatchesQuery,
@@ -13,14 +14,13 @@ import {
 } from "@/lib/people";
 import {
   EMPTY_FILTERS,
-  YEAR_OPTIONS,
+  FILTER_FIELDS,
   activeFilterCount,
   filterChips,
-  languageOptions,
+  filterOptions,
   personMatchesFilters,
-  residenceOptions,
-  specialtyOptions,
   toggleValue,
+  type FilterKey,
   type PeopleFilters,
 } from "@/lib/people-filters";
 import { PeopleProfileDrawer } from "@/components/people-profile-drawer";
@@ -200,7 +200,7 @@ function FilterGroup({
   return (
     <div>
       <p className="text-sm font-medium text-zinc-900">{title}</p>
-      <div className="mt-2 flex flex-wrap gap-2">{children}</div>
+      <div className="mt-2">{children}</div>
     </div>
   );
 }
@@ -354,8 +354,8 @@ const COLUMNS: {
     key: "consultancy",
     label: "Consultancy",
     className: "min-w-28",
-    sortValue: (person) => person.consultancy ?? "",
-    render: (person) => empty(person.consultancy),
+    sortValue: (person) => consultancyLabel(person.consultancy) ?? "",
+    render: (person) => empty(consultancyLabel(person.consultancy)),
   },
   {
     key: "comments",
@@ -386,9 +386,14 @@ export function PeopleDirectory({
     people.find((person) => person.id === selectedId) ??
     (createdPerson?.id === selectedId ? createdPerson : null);
 
-  const residences = useMemo(() => residenceOptions(people), [people]);
-  const specialties = useMemo(() => specialtyOptions(people), [people]);
-  const languages = useMemo(() => languageOptions(people), [people]);
+  const optionsByField = useMemo(() => {
+    return Object.fromEntries(
+      FILTER_FIELDS.map((field) => [field.key, filterOptions(people, field.key)]),
+    ) as Record<FilterKey, string[]>;
+  }, [people]);
+  const [optionSearch, setOptionSearch] = useState<Partial<Record<FilterKey, string>>>(
+    {},
+  );
   const selectedFilterCount = activeFilterCount(filters);
   const activeChips = filterChips(filters);
 
@@ -421,13 +426,10 @@ export function PeopleDirectory({
     setSortDirection("asc");
   }
 
-  function updateFilters<K extends keyof PeopleFilters>(
-    key: K,
-    value: PeopleFilters[K][number],
-  ) {
+  function updateFilters(key: FilterKey, value: string) {
     setFilters((current) => ({
       ...current,
-      [key]: toggleValue(current[key] as PeopleFilters[K][number][], value),
+      [key]: toggleValue(current[key], value),
     }));
   }
 
@@ -490,51 +492,55 @@ export function PeopleDirectory({
         ) : null}
 
         {filtersOpen ? (
-          <div className="grid gap-5 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-3">
-            <FilterGroup title="Specialty">
-              {specialties.map((option) => (
-                <FilterChip
-                  key={option.id}
-                  selected={filters.specialties.includes(option.id)}
-                  onClick={() => updateFilters("specialties", option.id)}
-                >
-                  {option.label}
-                </FilterChip>
-              ))}
-            </FilterGroup>
-            <FilterGroup title="Languages">
-              {languages.map((option) => (
-                <FilterChip
-                  key={option.id}
-                  selected={filters.languages.includes(option.id)}
-                  onClick={() => updateFilters("languages", option.id)}
-                >
-                  {option.label}
-                </FilterChip>
-              ))}
-            </FilterGroup>
-            <FilterGroup title="Residence">
-              {residences.map((residence) => (
-                <FilterChip
-                  key={residence}
-                  selected={filters.residences.includes(residence)}
-                  onClick={() => updateFilters("residences", residence)}
-                >
-                  {residence}
-                </FilterChip>
-              ))}
-            </FilterGroup>
-            <FilterGroup title="Years as GM">
-              {YEAR_OPTIONS.map((years) => (
-                <FilterChip
-                  key={years}
-                  selected={filters.minYears.includes(years)}
-                  onClick={() => updateFilters("minYears", years)}
-                >
-                  {years}+
-                </FilterChip>
-              ))}
-            </FilterGroup>
+          <div className="grid items-start gap-5 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:grid-cols-2 xl:grid-cols-3">
+            {[...FILTER_FIELDS]
+              .sort(
+                (left, right) =>
+                  optionsByField[left.key].length - optionsByField[right.key].length,
+              )
+              .map((field) => {
+                const options = optionsByField[field.key];
+                const search = (optionSearch[field.key] ?? "").trim().toLowerCase();
+                const shown = search
+                  ? options.filter((option) => option.toLowerCase().includes(search))
+                  : options;
+
+                return (
+                  <FilterGroup key={field.key} title={field.label}>
+                    {options.length > 6 ? (
+                      <input
+                        type="search"
+                        value={optionSearch[field.key] ?? ""}
+                        onChange={(event) =>
+                          setOptionSearch((current) => ({
+                            ...current,
+                            [field.key]: event.target.value,
+                          }))
+                        }
+                        placeholder={`Find a ${field.label.toLowerCase()}`}
+                        className="mb-2 h-8 w-full rounded-lg border border-zinc-200 px-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400"
+                      />
+                    ) : null}
+                    <div className="flex max-h-36 flex-wrap gap-2 overflow-y-auto">
+                      {shown.length === 0 ? (
+                        <p className="text-sm text-zinc-400">No matching options</p>
+                      ) : (
+                        shown.map((option) => (
+                          <FilterChip
+                            key={option}
+                            selected={filters[field.key].includes(option)}
+                            onClick={() => updateFilters(field.key, option)}
+                          >
+                            <span className="max-w-56 truncate" title={option}>
+                              {option}
+                            </span>
+                          </FilterChip>
+                        ))
+                      )}
+                    </div>
+                  </FilterGroup>
+                );
+              })}
           </div>
         ) : null}
 

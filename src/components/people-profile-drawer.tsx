@@ -6,6 +6,8 @@ import {
   PERSON_STATUS_LABELS,
   PERSON_STATUSES,
   asStringList,
+  consultancyLabel,
+  lastNameFirst,
   toUpdatePayload,
   type Person,
   type PersonStatus,
@@ -120,7 +122,7 @@ function personToDraft(person: Person): Draft {
     status: person.status,
     hasReferences: flagFrom(person.hasReferences),
     recruiter: person.recruiter ?? "",
-    consultancy: person.consultancy ?? "",
+    consultancy: consultancyLabel(person.consultancy) ?? "",
     dropboxComments: person.dropboxComments ?? "",
   };
 }
@@ -471,7 +473,7 @@ export function PeopleProfileDrawer({
               {isNew ? "Add person" : "Profile"}
             </p>
             <h2 className="mt-1 text-lg font-semibold text-zinc-900">
-              {isNew ? "New person" : person.name}
+              {isNew ? "New person" : lastNameFirst(person.name) || person.name}
             </h2>
           </div>
           <button

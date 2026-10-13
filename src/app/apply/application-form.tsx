@@ -185,7 +185,7 @@ function ApplyHeading({ title, text }: { title: string; text: string }) {
   return (
     <>
       <p className="text-xs font-medium uppercase tracking-wide text-bhp-navy">
-        Application
+        Information
       </p>
       <h1 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold text-bhp-navy">
         {title}
@@ -289,7 +289,7 @@ export function ApplicationForm() {
     return (
       <ApplyHeading
         title="Thank you"
-        text="We have received your application."
+        text="We have received your information."
       />
     );
   }
@@ -429,7 +429,7 @@ export function ApplicationForm() {
         disabled={submitting}
         className="h-11 w-full rounded-lg bg-bhp-navy text-sm font-medium text-white hover:bg-bhp-navy-deep disabled:opacity-50"
       >
-        {submitting ? "Sending..." : "Submit application"}
+        {submitting ? "Sending..." : "Submit information"}
       </button>
     </form>
     </>

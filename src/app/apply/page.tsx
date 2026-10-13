@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { ApplicationForm } from "@/app/apply/application-form";
 
 export const metadata: Metadata = {
-  title: "Apply | Bridge Hospitality Partners",
-  description: "Submit an application to Bridge Hospitality Partners.",
+  title: "Information | Bridge Hospitality Partners",
+  description: "Submit your information to Bridge Hospitality Partners.",
 };
 
 export default function ApplyPage() {

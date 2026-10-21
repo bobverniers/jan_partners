@@ -2,8 +2,9 @@ name: Keep Supabase awake
 
 on:
   schedule:
-    # Every 2 days at 08:00 UTC — well inside the 7-day free-plan pause window.
-    - cron: "0 8 */2 * *"
+    # A few database requests each day. Free projects pause when a week has
+    # too little user activity, and an every-other-day ping was not enough.
+    - cron: "0 8,14,20 * * *"
   workflow_dispatch:
 
 jobs:

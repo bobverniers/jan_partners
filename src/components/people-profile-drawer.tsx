@@ -167,6 +167,16 @@ function draftToPerson(person: Person, draft: Draft): Person {
 const inputClass =
   "mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-900/10";
 
+function linkedInHref(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "—" || /\s/.test(trimmed)) return null;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (/linkedin\.com/i.test(trimmed)) {
+    return `https://${trimmed.replace(/^\/+/, "")}`;
+  }
+  return null;
+}
+
 function applyTrackingSheet(
   current: Draft,
   values: TrackingSheetValues,
@@ -574,6 +584,16 @@ export function PeopleProfileDrawer({
                     update("linkedinUrl", event.target.value)
                   }
                 />
+                {linkedInHref(draft.linkedinUrl) ? (
+                  <a
+                    href={linkedInHref(draft.linkedinUrl) ?? undefined}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 inline-block break-all text-sm text-zinc-900 underline decoration-zinc-300 underline-offset-2 hover:decoration-zinc-500"
+                  >
+                    {draft.linkedinUrl.trim()}
+                  </a>
+                ) : null}
               </Field>
             </section>
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { CV_ACCEPT, uploadNewCvFile, validateCvFile } from "@/lib/cv-storage";
+import { standardResidence } from "@/lib/people";
 import { createSupabaseClient } from "@/lib/supabase/client";
 
 type YesNo = "" | "Yes" | "No";
@@ -181,7 +182,7 @@ function ChoiceGroup<T extends string>({
   );
 }
 
-function ApplyHeading({ title, text }: { title: string; text: string }) {
+function ApplyHeading({ title, text }: { title: string; text?: string }) {
   return (
     <>
       <p className="text-xs font-medium uppercase tracking-wide text-bhp-navy">
@@ -190,7 +191,7 @@ function ApplyHeading({ title, text }: { title: string; text: string }) {
       <h1 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold text-bhp-navy">
         {title}
       </h1>
-      <p className="mt-2 text-sm text-zinc-500">{text}</p>
+      {text ? <p className="mt-2 text-sm text-zinc-500">{text}</p> : null}
     </>
   );
 }
@@ -264,7 +265,7 @@ export function ApplicationForm() {
         linkedin_url: profileLink,
         cv_file_path: cvFilePath,
         cv_file_name: cvFileName,
-        primary_residence: blankToNull(residence),
+        primary_residence: standardResidence(residence),
         passports: lines(passports),
         preferred_locations: blankToNull(preferredLocations),
         years_as_gm: blankToNull(years),
@@ -296,10 +297,7 @@ export function ApplicationForm() {
 
   return (
     <>
-      <ApplyHeading
-        title="Tell us about your experience"
-        text="No account is needed. Submit the form and we will review it."
-      />
+      <ApplyHeading title="Tell us about your experience" />
       <form onSubmit={onSubmit} className="mt-8 space-y-6">
       <Question label="Full name">
         <input

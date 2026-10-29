@@ -19,7 +19,6 @@ import {
   filterChips,
   filterOptions,
   personMatchesFilters,
-  toggleValue,
   type FilterKey,
   type PeopleFilters,
 } from "@/lib/people-filters";
@@ -164,30 +163,6 @@ function CvCell({ person }: { person: Person }) {
   }
 
   return <LinkCell value={person.cvUrl} />;
-}
-
-function FilterChip({
-  selected,
-  onClick,
-  children,
-}: {
-  selected: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-full px-3 py-1 text-sm ring-1 ring-inset ${
-        selected
-          ? "bg-bhp-navy text-white ring-bhp-navy"
-          : "bg-white text-zinc-700 ring-zinc-200 hover:bg-zinc-50"
-      }`}
-    >
-      {children}
-    </button>
-  );
 }
 
 function FilterGroup({
@@ -391,9 +366,6 @@ export function PeopleDirectory({
       FILTER_FIELDS.map((field) => [field.key, filterOptions(people, field.key)]),
     ) as Record<FilterKey, string[]>;
   }, [people]);
-  const [optionSearch, setOptionSearch] = useState<Partial<Record<FilterKey, string>>>(
-    {},
-  );
   const selectedFilterCount = activeFilterCount(filters);
   const activeChips = filterChips(filters);
 
@@ -424,13 +396,6 @@ export function PeopleDirectory({
     }
     setSortKey(key);
     setSortDirection("asc");
-  }
-
-  function updateFilters(key: FilterKey, value: string) {
-    setFilters((current) => ({
-      ...current,
-      [key]: toggleValue(current[key], value),
-    }));
   }
 
   return (
@@ -493,54 +458,28 @@ export function PeopleDirectory({
 
         {filtersOpen ? (
           <div className="grid items-start gap-5 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:grid-cols-2 xl:grid-cols-3">
-            {[...FILTER_FIELDS]
-              .sort(
-                (left, right) =>
-                  optionsByField[left.key].length - optionsByField[right.key].length,
-              )
-              .map((field) => {
-                const options = optionsByField[field.key];
-                const search = (optionSearch[field.key] ?? "").trim().toLowerCase();
-                const shown = search
-                  ? options.filter((option) => option.toLowerCase().includes(search))
-                  : options;
-
-                return (
-                  <FilterGroup key={field.key} title={field.label}>
-                    {options.length > 6 ? (
-                      <input
-                        type="search"
-                        value={optionSearch[field.key] ?? ""}
-                        onChange={(event) =>
-                          setOptionSearch((current) => ({
-                            ...current,
-                            [field.key]: event.target.value,
-                          }))
-                        }
-                        placeholder={`Find a ${field.label.toLowerCase()}`}
-                        className="mb-2 h-8 w-full rounded-lg border border-zinc-200 px-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400"
-                      />
-                    ) : null}
-                    <div className="flex max-h-36 flex-wrap gap-2 overflow-y-auto">
-                      {shown.length === 0 ? (
-                        <p className="text-sm text-zinc-400">No matching options</p>
-                      ) : (
-                        shown.map((option) => (
-                          <FilterChip
-                            key={option}
-                            selected={filters[field.key].includes(option)}
-                            onClick={() => updateFilters(field.key, option)}
-                          >
-                            <span className="max-w-56 truncate" title={option}>
-                              {option}
-                            </span>
-                          </FilterChip>
-                        ))
-                      )}
-                    </div>
-                  </FilterGroup>
-                );
-              })}
+            {FILTER_FIELDS.map((field) => (
+              <FilterGroup key={field.key} title={field.label}>
+                <select
+                  value={filters[field.key][0] ?? ""}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setFilters((current) => ({
+                      ...current,
+                      [field.key]: value ? [value] : [],
+                    }));
+                  }}
+                  className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-2 text-sm text-zinc-900 outline-none focus:border-zinc-400"
+                >
+                  <option value="">All</option>
+                  {optionsByField[field.key].map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </FilterGroup>
+            ))}
           </div>
         ) : null}
 

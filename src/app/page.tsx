@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation";
 import { PeopleDirectory } from "@/components/people-directory";
-import { mapPerson, type PersonRow } from "@/lib/people";
+import {
+  clearUnknownRecruiters,
+  mapPerson,
+  type PersonRow,
+} from "@/lib/people";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +17,7 @@ export default async function Home() {
     redirect("/login");
   }
 
+  const recruiterError = await clearUnknownRecruiters(supabase);
   const { data, error } = await supabase
     .from("people")
     .select("*")
@@ -22,7 +27,7 @@ export default async function Home() {
   return (
     <PeopleDirectory
       people={people}
-      loadError={error?.message ?? null}
+      loadError={error?.message ?? recruiterError}
     />
   );
 }

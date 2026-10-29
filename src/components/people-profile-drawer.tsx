@@ -5,9 +5,12 @@ import { useRouter } from "next/navigation";
 import {
   PERSON_STATUS_LABELS,
   PERSON_STATUSES,
+  RECRUITERS,
   asStringList,
+  canonicalRecruiter,
   consultancyLabel,
   lastNameFirst,
+  standardResidence,
   toUpdatePayload,
   type Person,
   type PersonStatus,
@@ -114,14 +117,18 @@ function personToDraft(person: Person): Draft {
     yearsAsGm: person.yearsAsGm ?? "",
     specialty: person.specialty ?? "",
     openingExperience: person.openingExperience ?? "",
-    capexRefurbExperience: person.capexRefurbExperience ?? "",
+    capexRefurbExperience:
+      person.capexRefurbExperience === "Yes" ||
+      person.capexRefurbExperience === "No"
+        ? person.capexRefurbExperience
+        : "",
     languages: asStringList(person.languages).join("\n"),
     linkedinUrl: person.linkedinUrl ?? "",
     email: person.email ?? "",
     phone: person.phone ?? "",
     status: person.status,
     hasReferences: flagFrom(person.hasReferences),
-    recruiter: person.recruiter ?? "",
+    recruiter: canonicalRecruiter(person.recruiter) ?? "",
     consultancy: consultancyLabel(person.consultancy) ?? "",
     dropboxComments: person.dropboxComments ?? "",
   };
@@ -134,20 +141,24 @@ function draftToPerson(person: Person, draft: Draft): Person {
     cvUrl: blankToNull(draft.cvUrl),
     cvFilePath: blankToNull(draft.cvFilePath),
     cvFileName: blankToNull(draft.cvFileName),
-    primaryResidence: blankToNull(draft.primaryResidence),
+    primaryResidence: standardResidence(draft.primaryResidence),
     passports: parseList(draft.passports),
     preferredLocations: blankToNull(draft.preferredLocations),
     yearsAsGm: blankToNull(draft.yearsAsGm),
     specialty: blankToNull(draft.specialty),
     openingExperience: blankToNull(draft.openingExperience),
-    capexRefurbExperience: blankToNull(draft.capexRefurbExperience),
+    capexRefurbExperience:
+      draft.capexRefurbExperience === "Yes" ||
+      draft.capexRefurbExperience === "No"
+        ? draft.capexRefurbExperience
+        : null,
     languages: parseList(draft.languages),
     linkedinUrl: blankToNull(draft.linkedinUrl),
     email: blankToNull(draft.email),
     phone: blankToNull(draft.phone),
     status: draft.status,
     hasReferences: flagTo(draft.hasReferences),
-    recruiter: blankToNull(draft.recruiter),
+    recruiter: canonicalRecruiter(draft.recruiter),
     consultancy: blankToNull(draft.consultancy),
     dropboxComments: blankToNull(draft.dropboxComments),
   };
@@ -721,13 +732,17 @@ export function PeopleProfileDrawer({
                 />
               </Field>
               <Field label="Capex / refurbishment">
-                <textarea
-                  className={`${inputClass} min-h-20`}
+                <select
+                  className={inputClass}
                   value={draft.capexRefurbExperience}
                   onChange={(event) =>
                     update("capexRefurbExperience", event.target.value)
                   }
-                />
+                >
+                  <option value="">—</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
               </Field>
             </section>
 
@@ -757,13 +772,20 @@ export function PeopleProfileDrawer({
                   />
                 </Field>
                 <Field label="Recruiter">
-                  <input
+                  <select
                     className={inputClass}
                     value={draft.recruiter}
                     onChange={(event) =>
                       update("recruiter", event.target.value)
                     }
-                  />
+                  >
+                    <option value="">—</option>
+                    {RECRUITERS.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
                 </Field>
                 <Field label="Consultancy">
                   <input

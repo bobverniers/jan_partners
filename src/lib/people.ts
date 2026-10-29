@@ -1,5 +1,25 @@
 export const PERSON_STATUSES = ["new", "active", "inactive"] as const;
 
+export const RECRUITERS = [
+  "Belinda",
+  "Liz",
+  "Mark",
+  "Philip",
+  "Maray",
+  "Direct",
+] as const;
+
+export function canonicalRecruiter(
+  value: string | null | undefined,
+): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  return (
+    RECRUITERS.find((name) => name.toLowerCase() === trimmed.toLowerCase()) ??
+    null
+  );
+}
+
 export type PersonStatus = (typeof PERSON_STATUSES)[number];
 
 export type Person = {
@@ -155,6 +175,9 @@ export function specialtyLabel(value: string | null | undefined): string | null 
 const PLACE_FILLER =
   /^(open|willing|flexible|anywhere|everywhere|somewhere|nowhere|any|all|none|no|yes|prefer|preferred|preference|preferences|available|currently|presently|now|based|basing|living|live|lives|lived|located|location|locations|residing|resident|residence|relocation|relocate|relocating|worldwide|global|international|remote|tbd|na|various|multiple|other|others|etc|please|would|like|liked|work|working|works|in|a|an|for|with|my|i|am|im|i'm|looking|happy|consider|considering|considered|destination|destinations|place|places|hotel|hotels|resort|resorts|only|also|very|really|can|could|should|want|wants|wanted|ideally|possibly|maybe|perhaps|not|but|at|near|around|within|throughout|across|over|under|be|been|being|to|from|on|by|as|is|are|was|were|this|that|these|those|some|more|most|either|neither|just|still|already|always|never|here|there|where|when|while|which|who|what|how|if|then|than|so|too|into|onto|upon|per|via|about|above|after|before|during|until|since|between|among|including|include|includes|especially|mainly|mostly|primarily|preferably|home|abroad|overseas|locally|region|regions|area|areas|country|countries|world|negotiable|depends|depending|opportunity|opportunities|position|positions|role|roles|family|lifestyle|life|quality|great|good|best|love|loved|enjoy|wife|husband|children|kids|child|school|schools|end|start|starting|beginning|move|moving|moved|happy|relocate)$/i;
 
+const PLACE_TIME =
+  /^(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec|onwards|onward)$/i;
+
 const PLACE_CONNECTOR =
   /^(of|de|del|da|di|la|le|les|el|al|van|von|der|den|dos|das|do|du|es|st|saint|san|santa|são|sao|the)$/i;
 
@@ -170,6 +193,9 @@ const PLACE_ALIASES: Record<string, string> = {
   uae: "UAE",
   "united arab emirates": "UAE",
   eu: "Europe",
+  australian: "Australia",
+  malasyia: "Malaysia",
+  malasya: "Malaysia",
 };
 
 function placeAliasKey(value: string): string {
@@ -211,7 +237,7 @@ function placeWords(value: string): string[] {
 function keepPlaceWords(words: string[]): string[] {
   let start = 0;
   let end = words.length;
-  const filler = (word: string) => PLACE_FILLER.test(word);
+  const filler = (word: string) => PLACE_FILLER.test(word) || PLACE_TIME.test(word);
   const edge = (word: string) => /^(the|of)$/i.test(word);
   while (start < end && (filler(words[start]) || edge(words[start]))) start += 1;
   while (end > start && (filler(words[end - 1]) || edge(words[end - 1]))) end -= 1;
@@ -225,7 +251,7 @@ export function placeLabels(value: string | null | undefined): string[] {
   const found = new Map<string, string>();
   const notes = [...trimmed.matchAll(/\(([^)]*)\)/g)].map((match) => match[1]);
   const chunks = [trimmed.replace(/\([^)]*\)/g, " "), ...notes].flatMap((part) =>
-    part.split(/\n|[,;|/&]+|\band\b|\bor\b|\bbut\b/i),
+    part.split(/\n|[,;|/&]+|\s+[-–—]\s+|\band\b|\bor\b|\bbut\b/i),
   );
 
   for (const chunk of chunks) {
@@ -238,6 +264,13 @@ export function placeLabels(value: string | null | undefined): string[] {
   }
 
   return [...found.values()];
+}
+
+export function standardResidence(
+  value: string | null | undefined,
+): string | null {
+  const labels = placeLabels(value);
+  return labels.length > 0 ? labels.join(", ") : null;
 }
 
 export function consultancyLabel(value: string | null | undefined): string | null {
@@ -281,7 +314,7 @@ export function mapPerson(row: PersonRow): Person {
     cvUrl: row.cv_url,
     cvFilePath: row.cv_file_path,
     cvFileName: row.cv_file_name,
-    primaryResidence: row.primary_residence,
+    primaryResidence: standardResidence(row.primary_residence),
     passports: asStringList(row.passports),
     preferredLocations: row.preferred_locations,
     yearsAsGm: row.years_as_gm,
@@ -294,7 +327,7 @@ export function mapPerson(row: PersonRow): Person {
     phone: row.phone,
     status: row.status,
     hasReferences: row.has_references,
-    recruiter: row.recruiter,
+    recruiter: canonicalRecruiter(row.recruiter),
     consultancy: row.consultancy,
     dropboxComments: row.dropbox_comments,
   };
@@ -323,6 +356,56 @@ export function toUpdatePayload(person: Person): Omit<PersonRow, "id"> {
     consultancy: person.consultancy,
     dropbox_comments: person.dropboxComments,
   };
+}
+
+export async function clearUnknownRecruiters(supabase: {
+  from: (table: "people") => {
+    select: (columns: "id, recruiter") => {
+      not: (
+        column: "recruiter",
+        operator: "is",
+        value: null,
+      ) => PromiseLike<{
+        data: { id: string; recruiter: string | null }[] | null;
+        error: { message: string } | null;
+      }>;
+    };
+    update: (values: { recruiter: string | null }) => {
+      in: (
+        column: "id",
+        values: string[],
+      ) => PromiseLike<{ error: { message: string } | null }>;
+    };
+  };
+}): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("people")
+    .select("id, recruiter")
+    .not("recruiter", "is", null);
+
+  if (error) return error.message;
+  if (!data) return null;
+
+  const groups = new Map<string | null, string[]>();
+  for (const row of data) {
+    const canonical = canonicalRecruiter(row.recruiter);
+    if (canonical === row.recruiter) continue;
+    const ids = groups.get(canonical) ?? [];
+    ids.push(row.id);
+    groups.set(canonical, ids);
+  }
+
+  for (const [recruiter, ids] of groups) {
+    for (let index = 0; index < ids.length; index += 200) {
+      const { error: updateError } = await supabase
+        .from("people")
+        .update({ recruiter })
+        .in("id", ids.slice(index, index + 200));
+      if (updateError) return updateError.message;
+    }
+  }
+
+  return null;
 }
 
 export function personMatchesQuery(person: Person, query: string): boolean {

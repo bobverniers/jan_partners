@@ -1,5 +1,7 @@
 import {
   PERSON_STATUS_LABELS,
+  RECRUITERS,
+  canonicalRecruiter,
   consultancyLabel,
   placeLabels,
   specialtyLabel,
@@ -66,7 +68,6 @@ const LANGUAGE_OPTIONS: {
 export const FILTER_FIELDS = [
   { key: "status", label: "Status" },
   { key: "residence", label: "Residence" },
-  { key: "preferredLocations", label: "Preferred locations" },
   { key: "yearsAsGm", label: "Years as GM" },
   { key: "specialty", label: "Specialty" },
   { key: "capex", label: "Capex / refurb" },
@@ -83,7 +84,6 @@ export type PeopleFilters = Record<FilterKey, string[]>;
 export const EMPTY_FILTERS: PeopleFilters = {
   status: [],
   residence: [],
-  preferredLocations: [],
   yearsAsGm: [],
   specialty: [],
   capex: [],
@@ -145,7 +145,6 @@ function fieldIsBlank(person: Person, key: FilterKey): boolean {
   if (key === "specialty") return !person.specialty?.trim();
   if (key === "languages") return !person.languages.some((item) => item.trim());
   if (key === "residence") return !person.primaryResidence?.trim();
-  if (key === "preferredLocations") return !person.preferredLocations?.trim();
   return valuesForFilter(person, key).length === 0;
 }
 
@@ -155,8 +154,6 @@ export function valuesForFilter(person: Person, key: FilterKey): string[] {
       return [PERSON_STATUS_LABELS[person.status]];
     case "residence":
       return placeLabels(person.primaryResidence);
-    case "preferredLocations":
-      return placeLabels(person.preferredLocations);
     case "yearsAsGm":
       return yearBuckets(person);
     case "specialty":
@@ -170,16 +167,10 @@ export function valuesForFilter(person: Person, key: FilterKey): string[] {
       if (person.hasReferences === false) return ["No"];
       return [];
     case "recruiter":
-      return text(person.recruiter);
+      return text(canonicalRecruiter(person.recruiter));
     case "consultancy":
       return text(consultancyLabel(person.consultancy));
   }
-}
-
-export function toggleValue<T>(current: T[], value: T): T[] {
-  return current.includes(value)
-    ? current.filter((item) => item !== value)
-    : [...current, value];
 }
 
 export function activeFilterCount(filters: PeopleFilters): number {
@@ -191,27 +182,27 @@ export function activeFilterCount(filters: PeopleFilters): number {
 
 export function filterOptions(people: Person[], key: FilterKey): string[] {
   const found = new Set<string>();
-  let hasBlank = false;
 
   for (const person of people) {
-    if (fieldIsBlank(person, key)) {
-      hasBlank = true;
-      continue;
-    }
+    if (fieldIsBlank(person, key)) continue;
     for (const value of valuesForFilter(person, key)) found.add(value);
   }
 
-  if (key === "specialty") {
-    const options = ["City", "Resort", "Both"].filter((label) => found.has(label));
-    if (hasBlank) options.unshift(BLANK_FILTER);
-    return options;
+  if (key === "recruiter") {
+    return [...RECRUITERS];
   }
 
-  const options = [...found].sort((left, right) =>
+  if (key === "capex") {
+    return ["Yes", "No"];
+  }
+
+  if (key === "specialty") {
+    return ["City", "Resort", "Both"].filter((label) => found.has(label));
+  }
+
+  return [...found].sort((left, right) =>
     left.localeCompare(right, undefined, { numeric: true, sensitivity: "base" }),
   );
-  if (hasBlank) options.unshift(BLANK_FILTER);
-  return options;
 }
 
 export function personMatchesFilters(

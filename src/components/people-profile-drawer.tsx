@@ -250,6 +250,7 @@ export function PeopleProfileDrawer({
   const [fileInputKey, setFileInputKey] = useState(0);
   const [sheetInputKey, setSheetInputKey] = useState(0);
   const [sheetNotice, setSheetNotice] = useState<string | null>(null);
+  const [editingLinkedIn, setEditingLinkedIn] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sheetInputRef = useRef<HTMLInputElement>(null);
 
@@ -264,6 +265,7 @@ export function PeopleProfileDrawer({
     setFileInputKey((current) => current + 1);
     setSheetInputKey((current) => current + 1);
     setSheetNotice(null);
+    setEditingLinkedIn(false);
   }, [person?.id, isNew]);
 
   useEffect(() => {
@@ -576,25 +578,53 @@ export function PeopleProfileDrawer({
                   onChange={(event) => update("phone", event.target.value)}
                 />
               </Field>
-              <Field label="LinkedIn">
-                <input
-                  className={inputClass}
-                  value={draft.linkedinUrl}
-                  onChange={(event) =>
-                    update("linkedinUrl", event.target.value)
-                  }
-                />
-                {linkedInHref(draft.linkedinUrl) ? (
-                  <a
-                    href={linkedInHref(draft.linkedinUrl) ?? undefined}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-1 inline-block break-all text-sm text-zinc-900 underline decoration-zinc-300 underline-offset-2 hover:decoration-zinc-500"
-                  >
-                    {draft.linkedinUrl.trim()}
-                  </a>
-                ) : null}
-              </Field>
+              <div>
+                <span className="text-xs font-medium text-zinc-500">
+                  LinkedIn
+                </span>
+                {editingLinkedIn ? (
+                  <input
+                    autoFocus
+                    aria-label="LinkedIn"
+                    className={inputClass}
+                    value={draft.linkedinUrl}
+                    onChange={(event) =>
+                      update("linkedinUrl", event.target.value)
+                    }
+                    onBlur={() => setEditingLinkedIn(false)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        setEditingLinkedIn(false);
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className="mt-1 flex items-center gap-2">
+                    {linkedInHref(draft.linkedinUrl) ? (
+                      <a
+                        href={linkedInHref(draft.linkedinUrl) ?? undefined}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="min-w-0 break-all text-sm text-zinc-900 underline decoration-zinc-300 underline-offset-2 hover:decoration-zinc-500"
+                      >
+                        {draft.linkedinUrl.trim()}
+                      </a>
+                    ) : (
+                      <span className="min-w-0 break-all text-sm text-zinc-400">
+                        {draft.linkedinUrl.trim() || "—"}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setEditingLinkedIn(true)}
+                      className="h-8 shrink-0 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                )}
+              </div>
             </section>
 
             <section className="space-y-3">
